@@ -335,9 +335,9 @@
           });
           
           // Strict verification session recovery loop
-          const savedToken = localStorage.getItem('mm_gmail_token');
+          let savedToken = localStorage.getItem('mm_gmail_token');
           if (savedToken && savedToken !== 'null' && savedToken !== 'undefined' && savedToken.trim() !== '') {
-            state.gmailToken = savedToken;
+            state.gmailToken = savedToken.replace(/['"]+/g, '').trim();
             updateGmailUI(true);
             switchToInboxScreen();
             fetchRealGmailInbox();
@@ -410,23 +410,37 @@
     }
 
     /* ============================================================
-       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (STABLE)
+       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (ARMORED)
     ============================================================ */
     async function fetchRealGmailInbox() {
-      if (!state.gmailToken) return;
+      // Clean up the token string instantly to prevent malformed headers
+      let cleanToken = (state.gmailToken || localStorage.getItem('mm_gmail_token') || '').trim();
+      cleanToken = cleanToken.replace(/['"]+/g, ''); 
+
+      if (!cleanToken) {
+        console.warn("Fetch cancelled: No valid token string available in memory layout.");
+        handleSessionExpiry();
+        return;
+      }
       
       const listContainer = document.getElementById('email-list-container');
       listContainer.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">Fetching live inbox messages... ⏳</div>';
 
       try {
         const listUrl = 'https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=category:primary';
+        
+        // Enforced strict configuration parameters to clear Preflight checks cleanly
         const listResponse = await fetch(listUrl, {
-          headers: { 'Authorization': `Bearer ${state.gmailToken}` }
+          method: 'GET',
+          mode: 'cors',
+          headers: {
+            'Authorization': `Bearer ${cleanToken}`,
+            'Accept': 'application/json'
+          }
         });
         
-        // Handle explicit authentication token expiry codes safely
         if (listResponse.status === 401) {
-          console.warn("Access token expired natively.");
+          console.warn("Access token rejected or expired natively at endpoint wrapper.");
           handleSessionExpiry();
           return;
         }
@@ -443,7 +457,12 @@
         const messageDetailsPromises = listData.messages.map(async (msg) => {
           const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full`;
           const res = await fetch(detailUrl, {
-            headers: { 'Authorization': `Bearer ${state.gmailToken}` }
+            method: 'GET',
+            mode: 'cors',
+            headers: {
+              'Authorization': `Bearer ${cleanToken}`,
+              'Accept': 'application/json'
+            }
           });
           return res.json();
         });
@@ -485,7 +504,7 @@
         renderEmailList();
       } catch (err) {
         console.error("Network interface connection slip:", err);
-        showToast('Temporary network sync issue. Retrying...');
+        showToast('Connection issue encountered. Check developer console.');
       }
     }
 
