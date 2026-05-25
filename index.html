@@ -287,7 +287,7 @@
     
     let tokenClient;
     let state = {
-      gmailToken: localStorage.getItem('mm_gmail_token') || '',
+      gmailToken: '',
       emails: [],
       currentEmail: null
     };
@@ -334,11 +334,19 @@
             },
           });
           
-          // Auto-login session recovery loop
-          if (state.gmailToken) {
+          // Strict verification session recovery loop
+          const savedToken = localStorage.getItem('mm_gmail_token');
+          if (savedToken && savedToken !== 'null' && savedToken !== 'undefined' && savedToken.trim() !== '') {
+            state.gmailToken = savedToken;
             updateGmailUI(true);
             switchToInboxScreen();
             fetchRealGmailInbox();
+          } else {
+            // Force safe fallback configuration parameters
+            state.gmailToken = '';
+            localStorage.removeItem('mm_gmail_token');
+            updateGmailUI(false);
+            showSetupScreen();
           }
         } else {
           console.warn("Google authentication library object missing on window load wrapper.");
