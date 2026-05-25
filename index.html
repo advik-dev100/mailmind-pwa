@@ -10,20 +10,274 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
-    /* ... Keep all your CSS styles exactly the same here ... */
     :root {
       --bg: #121212;
       --surface: #1e1e1e;
       --surface-hover: #2a2a2a;
       --text: #e0e0e0;
       --text-muted: #a0a0a0;
-      --accent: #4caf50;
+      --accent: #4caf50; 
       --border: #333333;
     }
-    /* (Rest of your styles can stay exactly as they are) */
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      background-color: var(--surface);
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .btn {
+      background-color: var(--accent);
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .main-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    #screen-setup {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: linear-gradient(135deg, #121212 0%, #1c281c 100%);
+    }
+
+    .setup-card {
+      background-color: var(--surface);
+      padding: 40px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      max-width: 450px;
+      width: 100%;
+    }
+
+    .setup-card h2 {
+      margin-bottom: 15px;
+      color: #fff;
+    }
+
+    .setup-card p {
+      color: var(--text-muted);
+      margin-bottom: 25px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .setup-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--surface-hover);
+      color: #fff;
+    }
+
+    .workspace {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      gap: 20px;
+    }
+
+    .sidebar-panel {
+      flex: 1;
+      background-color: var(--surface);
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 15px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      background-color: rgba(255,255,255,0.02);
+    }
+
+    .email-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .email-item {
+      padding: 15px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .email-item:hover {
+      background-color: var(--surface-hover);
+    }
+
+    .email-item.unread {
+      border-left: 3px solid var(--accent);
+      background-color: rgba(76, 175, 80, 0.03);
+    }
+
+    .email-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      font-size: 0.85rem;
+    }
+
+    .email-from {
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .email-date {
+      color: var(--text-muted);
+    }
+
+    .email-subject {
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .detail-panel {
+      flex: 1.5;
+      background-color: var(--surface);
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .detail-body {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #323232;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    #toast.show {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
+
+  <header>
+    <h1>MailMind</h1>
+    <button id="gmail-auth-btn" class="btn" onclick="handleGmailAuth()">Connect Email Account</button>
+  </header>
+
+  <div class="main-container">
+    <div id="screen-setup" class="screen active">
+      <div class="setup-card">
+        <h2>Welcome to MailMind</h2>
+        <p>Connect your Gmail account using secure OAuth 2.0 to load, organize, and analyze your school projects and primary inbox messages natively.</p>
+        <div class="setup-actions">
+          <button class="btn" onclick="handleGmailAuth()">Sign in with Google</button>
+          <button class="btn btn-secondary" onclick="skipSetup()">Launch via Global Demo Mode</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="screen-inbox" class="screen">
+      <div class="workspace">
+        <div class="sidebar-panel">
+          <div class="panel-header">Primary Inbox</div>
+          <div id="email-list-container" class="email-list"></div>
+        </div>
+
+        <div class="detail-panel">
+          <div id="detail-header" class="panel-header">Select an email to read</div>
+          <div id="email-detail-body" class="detail-body">
+            <p style="color: var(--text-muted); text-align: center; padding-top: 40px;">No message currently loaded.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
 
   <script>
     /* ============================================================
@@ -38,7 +292,229 @@
       currentEmail: null
     };
 
-    // ... Keep all your Gmail API, OAuth functions, and UI functions here ...
+    const DEMO_EMAILS = [
+      {
+        id: 'demo1',
+        from: 'Yashika (Project Coordinator)',
+        subject: 'SST Presentation Slide Submissions',
+        date: 'May 24',
+        body: 'Hey team, please submit your updated slides on the 1857 Revolt centers by tonight so I can merge them into the master deck. Ensure your descriptions match the framework layout we discussed yesterday.',
+        unread: true
+      },
+      {
+        id: 'demo2',
+        from: 'Advik',
+        subject: 'PWA Configuration Update',
+        date: 'May 23',
+        body: 'I have updated the application build architecture files. Let me know if the standalone asset backgrounds render fine on your testing profiles.',
+        unread: false
+      }
+    ];
+
+    /* ============================================================
+       GOOGLE IDENTITY SERVICES INITIALIZATION (OAuth Flow)
+    ============================================================ */
+    window.onload = function () {
+      try {
+        if (typeof google !== 'undefined') {
+          tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: 'https://www.googleapis.com/auth/gmail.readonly',
+            callback: (tokenResponse) => {
+              if (tokenResponse.error !== undefined) {
+                throw tokenResponse;
+              }
+              state.gmailToken = tokenResponse.access_token;
+              localStorage.setItem('mm_gmail_token', tokenResponse.access_token);
+              
+              showToast('Account verified successfully!');
+              updateGmailUI(true);
+              switchToInboxScreen();
+              fetchRealGmailInbox();
+            },
+          });
+          
+          // Auto-login session recovery loop
+          if (state.gmailToken) {
+            updateGmailUI(true);
+            switchToInboxScreen();
+            fetchRealGmailInbox();
+          }
+        } else {
+          console.warn("Google authentication library object missing on window load wrapper.");
+        }
+      } catch (err) {
+        console.error("OAuth engine runtime failure:", err);
+      }
+    };
+
+    function handleGmailAuth() {
+      if (state.gmailToken) {
+        if (typeof google !== 'undefined' && state.gmailToken) {
+          google.accounts.oauth2.revokeToken(state.gmailToken, () => {});
+        }
+        state.gmailToken = '';
+        state.emails = [];
+        localStorage.removeItem('mm_gmail_token');
+        updateGmailUI(false);
+        renderEmailList();
+        showSetupScreen();
+        showToast('Disconnected from Google Account.');
+      } else {
+        if (tokenClient) {
+          tokenClient.requestAccessToken({ prompt: 'consent' });
+        } else {
+          showToast('Google API script not loaded yet. Check your connection.');
+        }
+      }
+    }
+
+    function updateGmailUI(isLoggedIn) {
+      const authBtn = document.getElementById('gmail-auth-btn');
+      if (authBtn) {
+        authBtn.innerText = isLoggedIn ? 'Disconnect Account' : 'Connect Email Account';
+        authBtn.style.background = isLoggedIn ? '#ef5350' : 'var(--accent)';
+        authBtn.style.color = isLoggedIn ? '#fff' : '#000';
+      }
+    }
+
+    /* ============================================================
+       DATA TRANSITION CONTROLLERS
+    ============================================================ */
+    function switchToInboxScreen() {
+      document.getElementById('screen-setup').classList.remove('active');
+      document.getElementById('screen-inbox').classList.add('active');
+    }
+
+    function showSetupScreen() {
+      document.getElementById('screen-inbox').classList.remove('active');
+      document.getElementById('screen-setup').classList.add('active');
+    }
+
+    function skipSetup() {
+      switchToInboxScreen();
+      if (state.gmailToken) {
+        fetchRealGmailInbox();
+      } else {
+        state.emails = DEMO_EMAILS;
+        renderEmailList();
+      }
+    }
+
+    /* ============================================================
+       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION
+    ============================================================ */
+    async function fetchRealGmailInbox() {
+      if (!state.gmailToken) return;
+      
+      const listContainer = document.getElementById('email-list-container');
+      listContainer.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">Fetching live inbox messages... ⏳</div>';
+
+      try {
+        const listUrl = 'https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=category:primary';
+        const listResponse = await fetch(listUrl, {
+          headers: { 'Authorization': `Bearer ${state.gmailToken}` }
+        });
+        const listData = await listResponse.json();
+
+        if (!listData.messages || listData.messages.length === 0) {
+          listContainer.innerHTML = '<div style="text-align:center; padding:20px;">No recent inbox items found.</div>';
+          return;
+        }
+
+        const messageDetailsPromises = listData.messages.map(async (msg) => {
+          const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full`;
+          const res = await fetch(detailUrl, {
+            headers: { 'Authorization': `Bearer ${state.gmailToken}` }
+          });
+          return res.json();
+        });
+
+        const rawMessages = await Promise.all(messageDetailsPromises);
+        
+        state.emails = rawMessages.map(msg => {
+          const headers = msg.payload.headers;
+          const fromHeader = headers.find(h => h.name.toLowerCase() === 'from')?.value || 'Unknown Sender';
+          const subjectHeader = headers.find(h => h.name.toLowerCase() === 'subject')?.value || '(No Subject)';
+          const dateHeader = headers.find(h => h.name.toLowerCase() === 'date')?.value || '';
+          
+          const cleanFrom = fromHeader.replace(/<.*>/, '').replace(/"/g, '').trim();
+          const shortDate = new Date(dateHeader).toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+          let plainTextBody = msg.snippet || '';
+          if (msg.payload.parts) {
+            const textPart = msg.payload.parts.find(p => p.mimeType === 'text/plain');
+            if (textPart && textPart.body.data) {
+              const base64SafeString = textPart.body.data.replace(/-/g, '+').replace(/_/g, '/');
+              plainTextBody = decodeURIComponent(escape(atob(base64SafeString)));
+            }
+          }
+
+          return {
+            id: msg.id,
+            from: cleanFrom,
+            subject: subjectHeader,
+            date: shortDate,
+            body: plainTextBody,
+            unread: msg.labelIds.includes('UNREAD')
+          };
+        });
+
+        renderEmailList();
+      } catch (err) {
+        console.error("Failed to query user inbox data streams:", err);
+        showToast('Session expired. Reconnecting account...');
+        state.gmailToken = '';
+        localStorage.removeItem('mm_gmail_token');
+        updateGmailUI(false);
+        showSetupScreen();
+      }
+    }
+
+    /* ============================================================
+       UI RENDERING PATTERNS
+    ============================================================ */
+    function renderEmailList() {
+      const container = document.getElementById('email-list-container');
+      container.innerHTML = '';
+
+      if (state.emails.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">Inbox empty.</div>';
+        return;
+      }
+
+      state.emails.forEach(email => {
+        const item = document.createElement('div');
+        item.className = `email-item ${email.unread ? 'unread' : ''}`;
+        item.onclick = () => selectEmail(email.id);
+        
+        item.innerHTML = `
+          <div class="email-meta">
+            <span class="email-from">${email.from}</span>
+            <span class="email-date">${email.date}</span>
+          </div>
+          <div class="email-subject">${email.subject}</div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function selectEmail(id) {
+      const email = state.emails.find(e => e.id === id);
+      if (!email) return;
+
+      email.unread = false;
+      renderEmailList(); 
+      
+      document.getElementById('detail-header').innerText = email.subject;
+      document.getElementById('email-detail-body').innerHTML = `
+        <div style="margin-bottom: 20px; font-size: 0.85rem; color: var(--text-muted);">
+          <strong>From:</strong> ${email.from} <br>
+          <strong>Date:</strong> ${email.date}
+        </div>
+        <div style="white-space: pre-wrap; word-break: break-word;">${email.body}</div>
+      `;
+    }
 
     function showToast(message) {
       const toast = document.getElementById('toast');
@@ -50,8 +526,6 @@
         }, 3000);
       }
     }
-
-    /* ⚠️ THE SERVICE WORKER REGISTRATION BLOCK WAS REMOVED FROM HERE */
   </script>
 </body>
 </html>
