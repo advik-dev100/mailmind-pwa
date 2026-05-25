@@ -342,7 +342,7 @@
             switchToInboxScreen();
             fetchRealGmailInbox();
           } else {
-            // Force safe fallback configuration parameters
+            // Clear storage if empty/malformed flags leak in
             state.gmailToken = '';
             localStorage.removeItem('mm_gmail_token');
             updateGmailUI(false);
@@ -358,8 +358,15 @@
 
     function handleGmailAuth() {
       if (state.gmailToken) {
+        // Corrected method call from revokeToken to revoke
         if (typeof google !== 'undefined' && state.gmailToken) {
-          google.accounts.oauth2.revokeToken(state.gmailToken, () => {});
+          try {
+            google.accounts.oauth2.revoke(state.gmailToken, () => {
+              console.log('Token successfully revoked from Google servers.');
+            });
+          } catch(e) {
+            console.warn("Server-side token revocation interface notice:", e);
+          }
         }
         state.gmailToken = '';
         state.emails = [];
@@ -413,7 +420,6 @@
        GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (ARMORED)
     ============================================================ */
     async function fetchRealGmailInbox() {
-      // Clean up the token string instantly to prevent malformed headers
       let cleanToken = (state.gmailToken || localStorage.getItem('mm_gmail_token') || '').trim();
       cleanToken = cleanToken.replace(/['"]+/g, ''); 
 
@@ -429,7 +435,6 @@
       try {
         const listUrl = 'https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=category:primary';
         
-        // Enforced strict configuration parameters to clear Preflight checks cleanly
         const listResponse = await fetch(listUrl, {
           method: 'GET',
           mode: 'cors',
@@ -447,7 +452,6 @@
 
         const listData = await listResponse.json();
 
-        // If your inbox is simply empty, display a clean layout message instead of crashing
         if (!listData.messages || listData.messages.length === 0) {
           listContainer.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">Primary Inbox is empty! No recent messages found.</div>';
           state.emails = [];
@@ -504,13 +508,13 @@
         renderEmailList();
       } catch (err) {
         console.error("Network interface connection slip:", err);
-        showToast('Connection issue encountered. Check developer console.');
+        showToast('Authentication error. Resetting context...');
+        // Clear broken cached states if a preflight block stalls the landing pipeline
+        handleSessionExpiry();
       }
     }
 
-    // Isolated helper to execute clean logouts only when strictly necessary
     function handleSessionExpiry() {
-      showToast('Session expired. Reconnecting account...');
       state.gmailToken = '';
       state.emails = [];
       localStorage.removeItem('mm_gmail_token');
