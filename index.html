@@ -431,15 +431,13 @@
 
       try {
         const queryParam = encodeURIComponent('category:primary');
-        // Token parameter completely removed from query string
         const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=${queryParam}`;
         
-        // Passing token safely through standard Bearer Authorization headers
+        // Refactored headers: 'Accept' removed to stop browser OPTIONS preflight blocks
         const listResponse = await fetch(listUrl, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${cleanToken}`,
-            'Accept': 'application/json'
+            'Authorization': `Bearer ${cleanToken}`
           }
         });
         
@@ -457,14 +455,13 @@
           return;
         }
 
-        // Fetch individual email details using standard headers
+        // Fetch individual email details using clean preflight headers
         const messageDetailsPromises = listData.messages.map(async (msg) => {
           const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full`;
           const res = await fetch(detailUrl, {
             method: 'GET',
             headers: {
-              'Authorization': `Bearer ${cleanToken}`,
-              'Accept': 'application/json'
+              'Authorization': `Bearer ${cleanToken}`
             }
           });
           return res.json();
