@@ -334,7 +334,7 @@
             },
           });
           
-          // Strict verification session recovery loop
+          // Session recovery loop
           let savedToken = localStorage.getItem('mm_gmail_token');
           if (savedToken && savedToken !== 'null' && savedToken !== 'undefined' && savedToken.trim() !== '') {
             state.gmailToken = savedToken.replace(/['"]+/g, '').trim();
@@ -415,7 +415,7 @@
     }
 
     /* ============================================================
-       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (URL TOKEN BYPASS)
+       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (ENCODED URL BYPASS)
     ============================================================ */
     async function fetchRealGmailInbox() {
       let cleanToken = (state.gmailToken || localStorage.getItem('mm_gmail_token') || '').trim();
@@ -431,12 +431,13 @@
       listContainer.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">Fetching live inbox messages... ⏳</div>';
 
       try {
-        // Appending the token directly to the URL string to bypass the CORS Preflight check completely
-        const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=category:primary&access_token=${cleanToken}`;
+        // ENCODED QUERY FIX: Forces the component text to stay valid across the raw network fetch pipeline
+        const queryParam = encodeURIComponent('category:primary');
+        const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=${queryParam}&access_token=${cleanToken}`;
         
         const listResponse = await fetch(listUrl);
         
-        if (listResponse.status === 401) {
+        if (listResponse.status === 401 || listResponse.status === 403) {
           console.warn("Access token rejected or expired natively at endpoint wrapper.");
           handleSessionExpiry();
           return;
@@ -451,7 +452,6 @@
         }
 
         const messageDetailsPromises = listData.messages.map(async (msg) => {
-          // Pass the token inside the URL parameters here too
           const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full&access_token=${cleanToken}`;
           const res = await fetch(detailUrl);
           return res.json();
@@ -494,7 +494,7 @@
         renderEmailList();
       } catch (err) {
         console.error("Network interface connection slip:", err);
-        showToast('Authentication error. Resetting context...');
+        showToast('Connection issue encountered. Check developer console.');
         handleSessionExpiry();
       }
     }
