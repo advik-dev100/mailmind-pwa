@@ -342,7 +342,6 @@
             switchToInboxScreen();
             fetchRealGmailInbox();
           } else {
-            // Clear storage if empty/malformed flags leak in
             state.gmailToken = '';
             localStorage.removeItem('mm_gmail_token');
             updateGmailUI(false);
@@ -358,7 +357,6 @@
 
     function handleGmailAuth() {
       if (state.gmailToken) {
-        // Corrected method call from revokeToken to revoke
         if (typeof google !== 'undefined' && state.gmailToken) {
           try {
             google.accounts.oauth2.revoke(state.gmailToken, () => {
@@ -417,7 +415,7 @@
     }
 
     /* ============================================================
-       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (ARMORED)
+       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (URL TOKEN BYPASS)
     ============================================================ */
     async function fetchRealGmailInbox() {
       let cleanToken = (state.gmailToken || localStorage.getItem('mm_gmail_token') || '').trim();
@@ -433,16 +431,10 @@
       listContainer.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">Fetching live inbox messages... ⏳</div>';
 
       try {
-        const listUrl = 'https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=category:primary';
+        // Appending the token directly to the URL string to bypass the CORS Preflight check completely
+        const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=category:primary&access_token=${cleanToken}`;
         
-        const listResponse = await fetch(listUrl, {
-          method: 'GET',
-          mode: 'cors',
-          headers: {
-            'Authorization': `Bearer ${cleanToken}`,
-            'Accept': 'application/json'
-          }
-        });
+        const listResponse = await fetch(listUrl);
         
         if (listResponse.status === 401) {
           console.warn("Access token rejected or expired natively at endpoint wrapper.");
@@ -459,15 +451,9 @@
         }
 
         const messageDetailsPromises = listData.messages.map(async (msg) => {
-          const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full`;
-          const res = await fetch(detailUrl, {
-            method: 'GET',
-            mode: 'cors',
-            headers: {
-              'Authorization': `Bearer ${cleanToken}`,
-              'Accept': 'application/json'
-            }
-          });
+          // Pass the token inside the URL parameters here too
+          const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full&access_token=${cleanToken}`;
+          const res = await fetch(detailUrl);
           return res.json();
         });
 
@@ -509,7 +495,6 @@
       } catch (err) {
         console.error("Network interface connection slip:", err);
         showToast('Authentication error. Resetting context...');
-        // Clear broken cached states if a preflight block stalls the landing pipeline
         handleSessionExpiry();
       }
     }
