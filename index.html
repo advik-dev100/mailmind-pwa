@@ -402,7 +402,7 @@
     }
 
     /* ============================================================
-       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION
+       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (STABLE)
     ============================================================ */
     async function fetchRealGmailInbox() {
       if (!state.gmailToken) return;
@@ -415,10 +415,20 @@
         const listResponse = await fetch(listUrl, {
           headers: { 'Authorization': `Bearer ${state.gmailToken}` }
         });
+        
+        // Handle explicit authentication token expiry codes safely
+        if (listResponse.status === 401) {
+          console.warn("Access token expired natively.");
+          handleSessionExpiry();
+          return;
+        }
+
         const listData = await listResponse.json();
 
+        // If your inbox is simply empty, display a clean layout message instead of crashing
         if (!listData.messages || listData.messages.length === 0) {
-          listContainer.innerHTML = '<div style="text-align:center; padding:20px;">No recent inbox items found.</div>';
+          listContainer.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">Primary Inbox is empty! No recent messages found.</div>';
+          state.emails = [];
           return;
         }
 
@@ -433,20 +443,24 @@
         const rawMessages = await Promise.all(messageDetailsPromises);
         
         state.emails = rawMessages.map(msg => {
-          const headers = msg.payload.headers;
+          const headers = msg.payload?.headers || [];
           const fromHeader = headers.find(h => h.name.toLowerCase() === 'from')?.value || 'Unknown Sender';
           const subjectHeader = headers.find(h => h.name.toLowerCase() === 'subject')?.value || '(No Subject)';
           const dateHeader = headers.find(h => h.name.toLowerCase() === 'date')?.value || '';
           
           const cleanFrom = fromHeader.replace(/<.*>/, '').replace(/"/g, '').trim();
-          const shortDate = new Date(dateHeader).toLocaleDateString([], { month: 'short', day: 'numeric' });
+          const shortDate = dateHeader ? new Date(dateHeader).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
 
           let plainTextBody = msg.snippet || '';
-          if (msg.payload.parts) {
+          if (msg.payload && msg.payload.parts) {
             const textPart = msg.payload.parts.find(p => p.mimeType === 'text/plain');
-            if (textPart && textPart.body.data) {
+            if (textPart && textPart.body && textPart.body.data) {
               const base64SafeString = textPart.body.data.replace(/-/g, '+').replace(/_/g, '/');
-              plainTextBody = decodeURIComponent(escape(atob(base64SafeString)));
+              try {
+                plainTextBody = decodeURIComponent(escape(atob(base64SafeString)));
+              } catch(e) {
+                plainTextBody = msg.snippet || '';
+              }
             }
           }
 
@@ -456,19 +470,25 @@
             subject: subjectHeader,
             date: shortDate,
             body: plainTextBody,
-            unread: msg.labelIds.includes('UNREAD')
+            unread: msg.labelIds ? msg.labelIds.includes('UNREAD') : false
           };
         });
 
         renderEmailList();
       } catch (err) {
-        console.error("Failed to query user inbox data streams:", err);
-        showToast('Session expired. Reconnecting account...');
-        state.gmailToken = '';
-        localStorage.removeItem('mm_gmail_token');
-        updateGmailUI(false);
-        showSetupScreen();
+        console.error("Network interface connection slip:", err);
+        showToast('Temporary network sync issue. Retrying...');
       }
+    }
+
+    // Isolated helper to execute clean logouts only when strictly necessary
+    function handleSessionExpiry() {
+      showToast('Session expired. Reconnecting account...');
+      state.gmailToken = '';
+      state.emails = [];
+      localStorage.removeItem('mm_gmail_token');
+      updateGmailUI(false);
+      showSetupScreen();
     }
 
     /* ============================================================
