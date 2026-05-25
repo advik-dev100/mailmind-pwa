@@ -414,7 +414,7 @@
     }
 
     /* ============================================================
-       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (SECURE HEADERS)
+       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (PREFLIGHT BYPASS)
     ============================================================ */
     async function fetchRealGmailInbox() {
       let cleanToken = (state.gmailToken || localStorage.getItem('mm_gmail_token') || '').trim();
@@ -431,19 +431,15 @@
 
       try {
         const queryParam = encodeURIComponent('category:primary');
-        const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=${queryParam}`;
+        // Reverting to clean token parameter layout now that scopes are verified on the console
+        const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=${queryParam}&access_token=${cleanToken}`;
         
-        // Refactored headers: 'Accept' removed to stop browser OPTIONS preflight blocks
-        const listResponse = await fetch(listUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${cleanToken}`
-          }
-        });
+        // Headers removed completely. This prevents the browser from sending an OPTIONS preflight check.
+        const listResponse = await fetch(listUrl);
         
         if (!listResponse.ok) {
           console.error(`Google API Error Status: ${listResponse.status}.`);
-          listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:#ef5350;">API Connection Failed (${listResponse.status}).<br><small style="color:var(--text-muted);">Ensure the Gmail API is enabled and your approved Data Access scopes match.</small></div>`;
+          listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:#ef5350;">API Connection Failed (${listResponse.status}).<br><small style="color:var(--text-muted);">Ensure your test email account is explicitly saved in the Cloud Platform audience panel.</small></div>`;
           return;
         }
 
@@ -455,15 +451,10 @@
           return;
         }
 
-        // Fetch individual email details using clean preflight headers
+        // Fetch individual email details without preflight triggers
         const messageDetailsPromises = listData.messages.map(async (msg) => {
-          const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full`;
-          const res = await fetch(detailUrl, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${cleanToken}`
-            }
-          });
+          const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full&access_token=${cleanToken}`;
+          const res = await fetch(detailUrl);
           return res.json();
         });
 
@@ -504,7 +495,7 @@
         renderEmailList();
       } catch (err) {
         console.error("Network system interface exception caught:", err);
-        listContainer.innerHTML = '<div style="text-align:center; padding:20px; color:#ef5350;">Network fetch blocked. Check security headers.</div>';
+        listContainer.innerHTML = '<div style="text-align:center; padding:20px; color:#ef5350;">Network fetch blocked. Check security configurations.</div>';
       }
     }
 
