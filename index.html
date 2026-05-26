@@ -432,13 +432,15 @@
 
       try {
         const queryParam = encodeURIComponent('category:primary');
-        // Clean URL endpoint (no token exposed in query param string)
         const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=${queryParam}`;
         
-        // Passing token securely via clean request headers to avoid URL 404 blocks
+        // Force simple CORS validation rules so Google skips the preflight wall
         const listResponse = await fetch(listUrl, {
+          method: 'GET',
+          mode: 'cors',
           headers: {
-            'Authorization': `Bearer ${cleanToken}`
+            'Authorization': `Bearer ${cleanToken}`,
+            'Accept': 'application/json'
           }
         });
         
@@ -461,12 +463,15 @@
           return;
         }
 
-        // Secure headers mapped onto individual parsing threads
+        // Apply matching CORS parameters onto the individual email parsing threads
         const messageDetailsPromises = listData.messages.map(async (msg) => {
           const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full`;
           const res = await fetch(detailUrl, {
+            method: 'GET',
+            mode: 'cors',
             headers: {
-              'Authorization': `Bearer ${cleanToken}`
+              'Authorization': `Bearer ${cleanToken}`,
+              'Accept': 'application/json'
             }
           });
           return res.json();
