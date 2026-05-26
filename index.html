@@ -352,13 +352,13 @@
         clearSessionState();
         showToast('Disconnected from Google Account.');
       } else {
-        // Comma separator instead of %20 to avoid Google accounts server 500 error rules
+        // Space-separated prompt sequence to ensure Google opens the full scope selection checklist screen safely
         const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
                          `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&` +
                          `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
                          `response_type=token&` +
                          `scope=${encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly')}&` +
-                         `prompt=select_account,consent`;
+                         `prompt=select_account%20consent`;
         
         // Push user to Google login screen directly
         window.location.href = oauthUrl;
