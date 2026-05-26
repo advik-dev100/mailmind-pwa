@@ -6,8 +6,6 @@
   <title>Our Vision Board - MailMind</title>
   <meta name="theme-color" content="#121212">
   <meta name="mobile-web-app-capable" content="yes">
-  
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
     :root {
@@ -284,8 +282,8 @@
        APPLICATION CONFIGURATION & STATE ENGINE
     ============================================================ */
     const GOOGLE_CLIENT_ID = '437875602906-4mmoiavhj9m3dslh6tvh1pivdqobnk52.apps.googleusercontent.com'; 
+    const REDIRECT_URI = 'https://advik-dev100.github.io/mailmind-pwa/';
     
-    let tokenClient;
     let state = {
       gmailToken: '',
       emails: [],
@@ -312,64 +310,58 @@
     ];
 
     /* ============================================================
-       GOOGLE IDENTITY SERVICES INITIALIZATION (OAuth Flow)
+       PREFLIGHT-FREE DIRECT REDIRECT FLOW
     ============================================================ */
     window.onload = function () {
       try {
-        if (typeof google !== 'undefined') {
-          tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: GOOGLE_CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/gmail.readonly',
-            callback: (tokenResponse) => {
-              if (tokenResponse.error !== undefined) {
-                throw tokenResponse;
-              }
-              state.gmailToken = tokenResponse.access_token;
-              localStorage.setItem('mm_gmail_token', tokenResponse.access_token);
-              
-              showToast('Account verified successfully!');
-              updateGmailUI(true);
-              switchToInboxScreen();
-              fetchRealGmailInbox();
-            },
-          });
+        // 1. Check if returning from Google Authentication with token inside hash fragment
+        const fragmentParams = new URLSearchParams(window.location.hash.substring(1));
+        const tokenFromHash = fragmentParams.get('access_token');
+
+        if (tokenFromHash) {
+          state.gmailToken = tokenFromHash.trim();
+          localStorage.setItem('mm_gmail_token', state.gmailToken);
           
-          let savedToken = localStorage.getItem('mm_gmail_token');
-          if (savedToken && savedToken !== 'null' && savedToken !== 'undefined' && savedToken.trim() !== '') {
-            state.gmailToken = savedToken.replace(/['"]+/g, '').trim();
-            updateGmailUI(true);
-            switchToInboxScreen();
-            fetchRealGmailInbox();
-          } else {
-            clearSessionState();
-          }
+          // Clean the address bar instantly so the token doesn't sit in the URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          showToast('Account verified successfully!');
+          updateGmailUI(true);
+          switchToInboxScreen();
+          fetchRealGmailInbox();
+          return;
+        }
+
+        // 2. If no hash parameter, look for an active token saved in local storage
+        let savedToken = localStorage.getItem('mm_gmail_token');
+        if (savedToken && savedToken !== 'null' && savedToken !== 'undefined' && savedToken.trim() !== '') {
+          state.gmailToken = savedToken.replace(/['"]+/g, '').trim();
+          updateGmailUI(true);
+          switchToInboxScreen();
+          fetchRealGmailInbox();
         } else {
-          console.warn("Google authentication library object missing on window load wrapper.");
+          clearSessionState();
         }
       } catch (err) {
-        console.error("OAuth engine runtime failure:", err);
+        console.error("Initialization runtime failure:", err);
       }
     };
 
     function handleGmailAuth() {
       if (state.gmailToken) {
-        if (typeof google !== 'undefined') {
-          try {
-            google.accounts.oauth2.revoke(state.gmailToken, () => {
-              console.log('Token successfully revoked from Google servers.');
-            });
-          } catch(e) {
-            console.warn("Server-side token revocation interface notice:", e);
-          }
-        }
         clearSessionState();
         showToast('Disconnected from Google Account.');
       } else {
-        if (tokenClient) {
-          tokenClient.requestAccessToken({ prompt: 'consent' });
-        } else {
-          showToast('Google API script not loaded yet. Check your connection.');
-        }
+        // Pure implicit flow redirect URL string which completely bypasses the gsi/client script preflight bugs
+        const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+                         `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&` +
+                         `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
+                         `response_type=token&` +
+                         `scope=${encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly')}&` +
+                         `prompt=consent`;
+        
+        // Push user to Google login screen directly
+        window.location.href = oauthUrl;
       }
     }
 
@@ -432,10 +424,9 @@
 
       try {
         const queryParam = encodeURIComponent('category:primary');
-        // Passing access_token directly via clean URL parameter to force standard simple request (prevents preflight OPTIONS requests)
         const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=${queryParam}&access_token=${cleanToken}`;
         
-        // Zero custom headers = browser interprets this as a safe simple fetch request
+        // Zero headers = Simple request pattern that skips browser preflight checks entirely
         const listResponse = await fetch(listUrl);
         
         if (!listResponse.ok) {
@@ -457,7 +448,6 @@
           return;
         }
 
-        // Apply matching query string authorization parameters onto individual message details links
         const messageDetailsPromises = listData.messages.map(async (msg) => {
           const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full&access_token=${cleanToken}`;
           const res = await fetch(detailUrl);
