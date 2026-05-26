@@ -314,7 +314,7 @@
     ============================================================ */
     window.onload = function () {
       try {
-        // 1. Check if returning from Google Authentication with token inside hash fragment
+        // Check if returning from Google Authentication with token inside hash fragment
         const fragmentParams = new URLSearchParams(window.location.hash.substring(1));
         const tokenFromHash = fragmentParams.get('access_token');
 
@@ -332,7 +332,7 @@
           return;
         }
 
-        // 2. If no hash parameter, look for an active token saved in local storage
+        // If no hash parameter, look for an active token saved in local storage
         let savedToken = localStorage.getItem('mm_gmail_token');
         if (savedToken && savedToken !== 'null' && savedToken !== 'undefined' && savedToken.trim() !== '') {
           state.gmailToken = savedToken.replace(/['"]+/g, '').trim();
@@ -352,13 +352,14 @@
         clearSessionState();
         showToast('Disconnected from Google Account.');
       } else {
-        // Pure implicit flow redirect URL string which completely bypasses the gsi/client script preflight bugs
+        // Added select_account and forced consent flags to rebuild the token scope permissions properly
         const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
                          `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&` +
                          `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
                          `response_type=token&` +
                          `scope=${encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly')}&` +
-                         `prompt=consent`;
+                         `prompt=select_account%20consent&` +
+                         `authuser=0`;
         
         // Push user to Google login screen directly
         window.location.href = oauthUrl;
