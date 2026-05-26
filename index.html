@@ -415,7 +415,7 @@
     }
 
     /* ============================================================
-       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (HYBRID SECURE)
+       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (SIMPLE GET)
     ============================================================ */
     async function fetchRealGmailInbox() {
       let cleanToken = (state.gmailToken || localStorage.getItem('mm_gmail_token') || '').trim();
@@ -432,17 +432,11 @@
 
       try {
         const queryParam = encodeURIComponent('category:primary');
-        const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=${queryParam}`;
+        // Passing access_token directly via clean URL parameter to force standard simple request (prevents preflight OPTIONS requests)
+        const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=${queryParam}&access_token=${cleanToken}`;
         
-        // Force simple CORS validation rules so Google skips the preflight wall
-        const listResponse = await fetch(listUrl, {
-          method: 'GET',
-          mode: 'cors',
-          headers: {
-            'Authorization': `Bearer ${cleanToken}`,
-            'Accept': 'application/json'
-          }
-        });
+        // Zero custom headers = browser interprets this as a safe simple fetch request
+        const listResponse = await fetch(listUrl);
         
         if (!listResponse.ok) {
           console.error(`Google API Error Status: ${listResponse.status}.`);
@@ -463,17 +457,10 @@
           return;
         }
 
-        // Apply matching CORS parameters onto the individual email parsing threads
+        // Apply matching query string authorization parameters onto individual message details links
         const messageDetailsPromises = listData.messages.map(async (msg) => {
-          const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full`;
-          const res = await fetch(detailUrl, {
-            method: 'GET',
-            mode: 'cors',
-            headers: {
-              'Authorization': `Bearer ${cleanToken}`,
-              'Accept': 'application/json'
-            }
-          });
+          const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full&access_token=${cleanToken}`;
+          const res = await fetch(detailUrl);
           return res.json();
         });
 
