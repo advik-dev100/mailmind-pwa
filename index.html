@@ -415,7 +415,7 @@
     }
 
     /* ============================================================
-       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION
+       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (HYBRID SECURE)
     ============================================================ */
     async function fetchRealGmailInbox() {
       let cleanToken = (state.gmailToken || localStorage.getItem('mm_gmail_token') || '').trim();
@@ -432,9 +432,15 @@
 
       try {
         const queryParam = encodeURIComponent('category:primary');
-        const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=${queryParam}&access_token=${cleanToken}`;
+        // Clean URL endpoint (no token exposed in query param string)
+        const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=${queryParam}`;
         
-        const listResponse = await fetch(listUrl);
+        // Passing token securely via clean request headers to avoid URL 404 blocks
+        const listResponse = await fetch(listUrl, {
+          headers: {
+            'Authorization': `Bearer ${cleanToken}`
+          }
+        });
         
         if (!listResponse.ok) {
           console.error(`Google API Error Status: ${listResponse.status}.`);
@@ -443,7 +449,7 @@
             clearSessionState();
             return;
           }
-          listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:#ef5350;">API Connection Failed (${listResponse.status}).<br><small style="color:var(--text-muted);">Check if your testing account is added to the Google Console test users list.</small></div>`;
+          listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:#ef5350;">API Connection Failed (${listResponse.status}).<br><small style="color:var(--text-muted);">Ensure permissions are fully consented on login popup.</small></div>`;
           return;
         }
 
@@ -455,9 +461,14 @@
           return;
         }
 
+        // Secure headers mapped onto individual parsing threads
         const messageDetailsPromises = listData.messages.map(async (msg) => {
-          const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full&access_token=${cleanToken}`;
-          const res = await fetch(detailUrl);
+          const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full`;
+          const res = await fetch(detailUrl, {
+            headers: {
+              'Authorization': `Bearer ${cleanToken}`
+            }
+          });
           return res.json();
         });
 
