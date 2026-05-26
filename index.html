@@ -351,19 +351,22 @@ function handleGmailAuth() {
         clearSessionState();
         showToast('Disconnected from Google Account.');
       } else {
-        // Simplified prompt token structure to prevent Google Accounts server 500 crashes
-        const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-                         `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&` +
-                         `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
-                         `response_type=token&` +
-                         `scope=${encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly')}&` +
-                         `prompt=consent`;
+        // Build the base endpoint structure cleanly
+        const baseUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
         
-        // Push user to Google login screen directly
-        window.location.href = oauthUrl;
+        // Let the browser handle parameter parsing to eliminate malformed 500 errors
+        const params = new URLSearchParams({
+          client_id: GOOGLE_CLIENT_ID,
+          redirect_uri: REDIRECT_URI,
+          response_type: 'token',
+          scope: 'https://www.googleapis.com/auth/gmail.readonly',
+          prompt: 'consent'
+        });
+        
+        // Combine them smoothly into a bulletproof URL string
+        window.location.href = `${baseUrl}?${params.toString()}`;
       }
-    }
-    
+    }    
     function clearSessionState() {
       state.gmailToken = '';
       state.emails = [];
