@@ -352,14 +352,13 @@
         clearSessionState();
         showToast('Disconnected from Google Account.');
       } else {
-        // Added select_account and forced consent flags to rebuild the token scope permissions properly
+        // Comma separator instead of %20 to avoid Google accounts server 500 error rules
         const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
                          `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&` +
                          `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
                          `response_type=token&` +
                          `scope=${encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly')}&` +
-                         `prompt=select_account%20consent&` +
-                         `authuser=0`;
+                         `prompt=select_account,consent`;
         
         // Push user to Google login screen directly
         window.location.href = oauthUrl;
