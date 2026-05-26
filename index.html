@@ -346,25 +346,24 @@
         console.error("Initialization runtime failure:", err);
       }
     };
-
-    function handleGmailAuth() {
+function handleGmailAuth() {
       if (state.gmailToken) {
         clearSessionState();
         showToast('Disconnected from Google Account.');
       } else {
-        // Space-separated prompt sequence to ensure Google opens the full scope selection checklist screen safely
+        // Simplified prompt token structure to prevent Google Accounts server 500 crashes
         const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
                          `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&` +
                          `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
                          `response_type=token&` +
                          `scope=${encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly')}&` +
-                         `prompt=select_account%20consent`;
+                         `prompt=consent`;
         
         // Push user to Google login screen directly
         window.location.href = oauthUrl;
       }
     }
-
+    
     function clearSessionState() {
       state.gmailToken = '';
       state.emails = [];
