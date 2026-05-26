@@ -341,10 +341,7 @@
             switchToInboxScreen();
             fetchRealGmailInbox();
           } else {
-            state.gmailToken = '';
-            localStorage.removeItem('mm_gmail_token');
-            updateGmailUI(false);
-            showSetupScreen();
+            clearSessionState();
           }
         } else {
           console.warn("Google authentication library object missing on window load wrapper.");
@@ -356,7 +353,7 @@
 
     function handleGmailAuth() {
       if (state.gmailToken) {
-        if (typeof google !== 'undefined' && state.gmailToken) {
+        if (typeof google !== 'undefined') {
           try {
             google.accounts.oauth2.revoke(state.gmailToken, () => {
               console.log('Token successfully revoked from Google servers.');
@@ -365,12 +362,7 @@
             console.warn("Server-side token revocation interface notice:", e);
           }
         }
-        state.gmailToken = '';
-        state.emails = [];
-        localStorage.removeItem('mm_gmail_token');
-        updateGmailUI(false);
-        renderEmailList();
-        showSetupScreen();
+        clearSessionState();
         showToast('Disconnected from Google Account.');
       } else {
         if (tokenClient) {
@@ -379,6 +371,15 @@
           showToast('Google API script not loaded yet. Check your connection.');
         }
       }
+    }
+
+    function clearSessionState() {
+      state.gmailToken = '';
+      state.emails = [];
+      localStorage.removeItem('mm_gmail_token');
+      updateGmailUI(false);
+      renderEmailList();
+      showSetupScreen();
     }
 
     function updateGmailUI(isLoggedIn) {
@@ -414,7 +415,7 @@
     }
 
     /* ============================================================
-       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (PREFLIGHT BYPASS)
+       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION
     ============================================================ */
     async function fetchRealGmailInbox() {
       let cleanToken = (state.gmailToken || localStorage.getItem('mm_gmail_token') || '').trim();
@@ -422,7 +423,7 @@
 
       if (!cleanToken) {
         console.warn("Fetch cancelled: No token available.");
-        handleSessionExpiry();
+        clearSessionState();
         return;
       }
       
@@ -431,15 +432,18 @@
 
       try {
         const queryParam = encodeURIComponent('category:primary');
-        // Reverting to clean token parameter layout now that scopes are verified on the console
         const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=${queryParam}&access_token=${cleanToken}`;
         
-        // Headers removed completely. This prevents the browser from sending an OPTIONS preflight check.
         const listResponse = await fetch(listUrl);
         
         if (!listResponse.ok) {
           console.error(`Google API Error Status: ${listResponse.status}.`);
-          listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:#ef5350;">API Connection Failed (${listResponse.status}).<br><small style="color:var(--text-muted);">Ensure your test email account is explicitly saved in the Cloud Platform audience panel.</small></div>`;
+          if (listResponse.status === 401 || listResponse.status === 403) {
+            console.warn("Token is invalid or expired. Resetting session.");
+            clearSessionState();
+            return;
+          }
+          listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:#ef5350;">API Connection Failed (${listResponse.status}).<br><small style="color:var(--text-muted);">Check if your testing account is added to the Google Console test users list.</small></div>`;
           return;
         }
 
@@ -451,7 +455,6 @@
           return;
         }
 
-        // Fetch individual email details without preflight triggers
         const messageDetailsPromises = listData.messages.map(async (msg) => {
           const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full&access_token=${cleanToken}`;
           const res = await fetch(detailUrl);
@@ -497,14 +500,6 @@
         console.error("Network system interface exception caught:", err);
         listContainer.innerHTML = '<div style="text-align:center; padding:20px; color:#ef5350;">Network fetch blocked. Check security configurations.</div>';
       }
-    }
-
-    function handleSessionExpiry() {
-      state.gmailToken = '';
-      state.emails = [];
-      localStorage.removeItem('mm_gmail_token');
-      updateGmailUI(false);
-      showSetupScreen();
     }
 
     /* ============================================================
