@@ -76,16 +76,16 @@ h1{font-size:1.2rem;font-weight:700;color:#fff;}
 .dcs{padding:13px 15px;font-size:.87rem;line-height:1.65;color:var(--txt);}
 /* SETTINGS */
 #s3{flex-direction:column;background:var(--bg);}
-.sbod{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;max-width:640px;margin:0 auto;width:100%;}
+.sbod{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;max-width:720px;margin:0 auto;width:100%;}
 
-/* INPUTS & ROWS - VISIBILITY STYLES PATCHED */
+/* FIXED LONG INPUTS & CONTAINER OVERHAUL */
 .sec {
   background: var(--sur);
   border: 1px solid var(--bdr);
   border-radius: 8px;
   overflow: hidden;
   height: auto !important;
-  padding-bottom: 8px;
+  padding-bottom: 5px;
 }
 .sectitle{padding:11px 15px;border-bottom:1px solid var(--bdr);font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);background:rgba(255,255,255,.02);}
 .srow {
@@ -102,14 +102,16 @@ h1{font-size:1.2rem;font-weight:700;color:#fff;}
 .row2 {
   display: flex !important;
   flex-direction: row !important;
-  gap: 10px !important;
-  margin-top: 12px !important;
+  gap: 12px !important;
+  margin-top: 8px !important;
   width: 100% !important;
   height: auto !important;
   align-items: center !important;
+  justify-content: flex-start !important;
 }
 input.inp {
-  flex: 1 !important;
+  width: 500px !important; /* Forces the box to be explicitly long */
+  flex: none !important; /* Disables flex resizing quirks */
   display: block !important;
   background: #252525 !important;
   border: 1px solid #444 !important;
@@ -118,13 +120,14 @@ input.inp {
   font-size: 0.87rem !important;
   padding: 10px 14px !important;
   box-sizing: border-box !important;
+  height: 42px !important;
   min-height: 42px !important;
-  max-height: 42px !important;
   outline: none !important;
   transition: border-color .15s;
 }
 select.inp {
-  width: 100% !important;
+  width: 500px !important; /* Matches text box width exactly */
+  flex: none !important;
   background: var(--sur2) !important;
   border: 1px solid var(--bdr) !important;
   border-radius: 5px !important;
@@ -145,11 +148,12 @@ input[type=password].inp {
 }
 .row2 .btn {
   height: 42px !important;
-  padding: 0 18px !important;
+  padding: 0 22px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   font-size: 0.85rem !important;
+  flex-shrink: 0 !important;
 }
 
 /* TAG PILLS */
@@ -275,18 +279,22 @@ input[type=password].inp {
       <div class="sectitle">📝 Summary Style</div>
       <div class="srow">
         <label>Summary length</label>
-        <select class="inp" id="plen" onchange="saveP()">
-          <option value="brief">Brief — 1 to 2 sentences</option>
-          <option value="standard" selected>Standard — 3 to 4 sentences</option>
-          <option value="detailed">Detailed — full breakdown with action points</option>
-        </select>
+        <div class="row2">
+          <select class="inp" id="plen" onchange="saveP()">
+            <option value="brief">Brief — 1 to 2 sentences</option>
+            <option value="standard" selected>Standard — 3 to 4 sentences</option>
+            <option value="detailed">Detailed — full breakdown with action points</option>
+          </select>
+        </div>
       </div>
       <div class="srow">
         <label>Digest covers</label>
-        <select class="inp" id="pscope" onchange="saveP()">
-          <option value="today" selected>Today's emails only</option>
-          <option value="all">All loaded emails</option>
-        </select>
+        <div class="row2">
+          <select class="inp" id="pscope" onchange="saveP()">
+            <option value="today" selected>Today's emails only</option>
+            <option value="all">All loaded emails</option>
+          </select>
+        </div>
       </div>
     </div>
 
