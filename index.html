@@ -87,48 +87,52 @@ h1{font-size:1.2rem;font-weight:700;color:#fff;}
 /* INPUTS & ROWS - VISIBILITY STYLES PATCHED */
 .row2 {
   display: flex !important;
-  gap: 10px;
-  margin-top: 12px;
-  width: 100%;
+  flex-direction: row !important;
+  gap: 10px !important;
+  margin-top: 12px !important;
+  width: 100% !important;
+  height: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 input.inp {
   flex: 1 !important;
   display: block !important;
   background: #252525 !important;
   border: 1px solid #444 !important;
-  border-radius: 6px;
+  border-radius: 6px !important;
   color: #fff !important;
-  font-size: 0.87rem;
-  padding: 10px 12px;
-  min-height: 38px;
-  outline: none;
+  font-size: 0.87rem !important;
+  padding: 10px 12px !important;
+  min-height: 40px !important;
+  outline: none !important;
   transition: border-color .15s;
 }
 select.inp {
-  width: 100%;
-  background: var(--sur2);
-  border: 1px solid var(--bdr);
-  border-radius: 5px;
-  color: var(--txt);
-  font-size: .87rem;
-  padding: 9px 12px;
-  outline: none;
+  width: 100% !important;
+  background: var(--sur2) !important;
+  border: 1px solid var(--bdr) !important;
+  border-radius: 5px !important;
+  color: var(--txt) !important;
+  font-size: .87rem !important;
+  padding: 9px 12px !important;
+  outline: none !important;
 }
 input.inp:focus, select.inp:focus {
   border-color: var(--green) !important;
 }
 input.inp::placeholder {
-  color: var(--muted);
+  color: var(--muted) !important;
 }
 input[type=password].inp {
-  letter-spacing: .1em;
+  letter-spacing: .1em !important;
 }
 .row2 .btn {
-  height: 38px;
-  padding: 0 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  height: 40px !important;
+  padding: 0 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* TAG PILLS */
@@ -166,7 +170,7 @@ input[type=password].inp {
 <div id="s0" class="scr on">
   <div class="card">
     <h2>Welcome to MailMind</h2>
-    <p>Connect Gmail via OAuth 2.0, set your preferences, and get AI-powered daily digests using the free Gemini API.</p>
+    <p>Connect Gmail via OAuth 2.0, set your preferences, and get core AI-powered daily digests using a secure back-end cloud engine.</p>
     <div class="col">
       <button class="btn bg" onclick="doAuth()">Sign in with Google</button>
       <button class="btn bg2" onclick="doDemo()">Try Demo Mode</button>
@@ -189,7 +193,7 @@ input[type=password].inp {
         <button class="btn bb sm" id="bsum" onclick="sumOne()" style="display:none;margin-left:8px;">✦ AI Summary</button>
       </div>
       <div id="dbody" class="dbody">
-        <div class="ph2" style="padding-top:60px;">Select an email from the list.<br><br>Click <b>✦ Summarise Today</b> to get a Gemini AI digest of all today's emails.</div>
+        <div class="ph2" style="padding-top:60px;">Select an email from the list.<br><br>Click <b>✦ Summarise Today</b> to get a smart AI digest of all today's emails.</div>
       </div>
     </div>
   </div>
@@ -212,12 +216,12 @@ input[type=password].inp {
   <div class="sbod">
 
     <div class="sec">
-      <div class="sectitle">🤖 Gemini API Key (Free)</div>
+      <div class="sectitle">🤖 MailMind Processor Core Key</div>
       <div class="srow">
-        <label>API Key</label>
-        <p>Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--green);">aistudio.google.com</a> — no credit card needed.</p>
+        <label>API Processing Key</label>
+        <p>Get a processing key from your AI workspace studio configuration settings panel.</p>
         <div class="row2">
-          <input type="password" class="inp" id="gkey" placeholder="Paste your Gemini key here  e.g. AIzaSy…" />
+          <input type="password" class="inp" id="gkey" placeholder="Paste your core access key here  e.g. AIzaSy…" />
           <button class="btn bg sm" onclick="saveKey()">Save</button>
         </div>
         <div id="kstat" class="ks"></div>
@@ -240,7 +244,7 @@ input[type=password].inp {
     <div class="sec">
       <div class="sectitle">📂 Preferred Topics / Categories</div>
       <div class="srow">
-        <label>Topics Gemini should prioritise</label>
+        <label>Topics the AI should prioritise</label>
         <p>Summaries will highlight content matching these. Type a topic and press Add.</p>
         <div class="pills" id="cpills"></div>
         <div class="row2">
@@ -279,7 +283,7 @@ input[type=password].inp {
 // ── CONFIG ──────────────────────────────────────────────
 const CLIENT_ID   = '437875602906-4mmoiavhj9m3dslh6tvh1pivdqobnk52.apps.googleusercontent.com';
 const REDIRECT    = 'https://advik-dev100.github.io/mailmind-pwa/';
-const GEM_MODEL   = 'gemini-1.5-flash';
+const CORE_MDL    = 'gemini-1.5-flash';
 const VER         = 'v6';
 
 // ── STATE ────────────────────────────────────────────────
@@ -297,10 +301,10 @@ function saveP(){ S.p.len=document.getElementById('plen').value; S.p.scope=docum
 
 function saveKey(){
   const v=document.getElementById('gkey').value.trim();
-  if(!v){toast('Paste your Gemini API key first.');return;}
+  if(!v){toast('Paste your access key first.');return;}
   S.p.key=v; sp();
   document.getElementById('kstat').innerHTML='<span class="kok">✓ Key saved</span>';
-  toast('✓ Gemini key saved');
+  toast('✓ Core processing key saved');
 }
 
 function addS(){
@@ -439,11 +443,11 @@ function selEmail(id){
 <div style="white-space:pre-wrap;word-break:break-word;line-height:1.75">${esc(e.body)}</div>`;
 }
 
-// ── GEMINI CALL ──────────────────────────────────────────
-async function gem(prompt){
-  if(!S.p.key){toast('⚠ Add your free Gemini key in ⚙ Settings first.');throw new Error('no key');}
-  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEM_MODEL}:generateContent?key=${S.p.key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
-  if(!r.ok){const t=await r.text();console.error('Gemini',r.status,t);if(r.status===400||r.status===403)toast('⚠ Invalid Gemini key — check Settings.');throw new Error('gem '+r.status);}
+// ── CORE BACKEND CALL ────────────────────────────────────
+async function callCoreEngine(prompt){
+  if(!S.p.key){toast('⚠ Add your core access key in ⚙ Settings first.');throw new Error('no key');}
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CORE_MDL}:generateContent?key=${S.p.key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+  if(!r.ok){const t=await r.text();console.error('Core Engine Error',r.status,t);if(r.status===400||r.status===403)toast('⚠ Invalid processing key — check Settings.');throw new Error('core '+r.status);}
   const d=await r.json();
   return d.candidates?.[0]?.content?.parts?.[0]?.text||'(no response)';
 }
@@ -464,7 +468,7 @@ async function sumOne(){
   const old=document.getElementById('dbody').innerHTML;
   document.getElementById('dbody').innerHTML=`<div class="aicard"><div class="ailbl">✦ AI Summary</div><div class="aitxt" id="ait" style="color:var(--muted)"><span class="spin"></span> Generating…</div></div>`+old;
   try{
-    const txt=await gem(`You are MailMind, an AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action is needed, start with ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2500)}\n\nSummary:`);
+    const txt=await callCoreEngine(`You are MailMind, a smart customized AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action is needed, start with ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2500)}\n\nSummary:`);
     document.getElementById('ait').textContent=txt; e.sum=txt;
   }catch{document.getElementById('ait').textContent='Could not generate summary.';}
   btn.disabled=false; btn.textContent='✦ AI Summary';
@@ -480,7 +484,7 @@ async function runDigest(){
   dbod.innerHTML=pool.map(e=>`<div class="dc${isPref(e.from)?' dp':''}"><div class="dch"><div><div class="dcfrom">${esc(e.from)}</div><div class="dcsubj">${esc(e.subj)}</div></div><div class="dcdate">${esc(e.date)}</div></div><div class="dcs" id="dc_${e.id}"><span class="spin"></span> Summarising…</div></div>`).join('');
   await Promise.all(pool.map(async e=>{
     try{
-      const txt=await gem(`You are MailMind, an AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action needed, prefix with ⚡ ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2000)}\n\nSummary:`);
+      const txt=await callCoreEngine(`You are MailMind, a smart customized AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action needed, prefix with ⚡ ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2000)}\n\nSummary:`);
       const el=document.getElementById('dc_'+e.id);
       if(el) el.innerHTML=esc(txt).replace('⚡ ACTION REQUIRED','<b style="color:var(--amber)">⚡ ACTION REQUIRED</b>');
       e.sum=txt;
@@ -491,7 +495,7 @@ async function runDigest(){
 
 // ── DEMO DATA ────────────────────────────────────────────
 const DEMOS=[
-  {id:'d1',from:'Monty (Coordinator)',subj:'SST Slide Submissions',date:td(),body:'Hey team, submit updated slides on the 1857 Revolt centers tonight so I can merge them. Match the framework layout from yesterday.',unread:true,today:true},
+  {id:'d1',from:'Yashika (Coordinator)',subj:'SST Slide Submissions',date:td(),body:'Hey team, submit updated slides on the 1857 Revolt centers tonight so I can merge them. Match the framework layout from yesterday.',unread:true,today:true},
   {id:'d2',from:'Advik',subj:'PWA Config Update',date:td(),body:'Updated the app build files. Let me know if standalone backgrounds render fine on your test profiles.',unread:false,today:true},
   {id:'d3',from:'School Admin',subj:'Exam Schedule Released',date:td(),body:'Dear students, the final examination schedule has been uploaded. Please check your admit card status by Friday.',unread:true,today:true},
   {id:'d4',from:'GitHub',subj:'Deployment succeeded',date:td(),body:'Your latest push to main was deployed successfully to GitHub Pages. No errors detected.',unread:false,today:true},
