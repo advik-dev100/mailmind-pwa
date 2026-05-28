@@ -83,19 +83,60 @@ h1{font-size:1.2rem;font-weight:700;color:#fff;}
 .srow:last-child{border-bottom:none;}
 .srow label{display:block;font-size:.87rem;font-weight:600;color:var(--txt);margin-bottom:4px;}
 .srow p{font-size:.78rem;color:var(--muted);line-height:1.5;margin-bottom:9px;}
-/* INPUTS */
-input.inp,select.inp{width:100%;background:var(--sur2);border:1px solid var(--bdr);border-radius:5px;color:var(--txt);font-size:.87rem;padding:9px 12px;outline:none;transition:border-color .15s;}
-input.inp:focus,select.inp:focus{border-color:var(--green);}
-input.inp::placeholder{color:var(--muted);}
-input[type=password].inp{letter-spacing:.1em;}
-.row2{display:flex;gap:8px;margin-top:8px;}
-.row2 input{flex:1;}
+
+/* INPUTS & ROWS - VISIBILITY STYLES PATCHED */
+.row2 {
+  display: flex !important;
+  gap: 10px;
+  margin-top: 12px;
+  width: 100%;
+}
+input.inp {
+  flex: 1 !important;
+  display: block !important;
+  background: #252525 !important;
+  border: 1px solid #444 !important;
+  border-radius: 6px;
+  color: #fff !important;
+  font-size: 0.87rem;
+  padding: 10px 12px;
+  min-height: 38px;
+  outline: none;
+  transition: border-color .15s;
+}
+select.inp {
+  width: 100%;
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  border-radius: 5px;
+  color: var(--txt);
+  font-size: .87rem;
+  padding: 9px 12px;
+  outline: none;
+}
+input.inp:focus, select.inp:focus {
+  border-color: var(--green) !important;
+}
+input.inp::placeholder {
+  color: var(--muted);
+}
+input[type=password].inp {
+  letter-spacing: .1em;
+}
+.row2 .btn {
+  height: 38px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* TAG PILLS */
 .pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
-.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:.79rem;}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:100px;font-size:.79rem;font-weight:500;}
 .pill.g{background:rgba(76,175,80,.12);color:var(--green);border:1px solid rgba(76,175,80,.3);}
 .pill.a{background:rgba(255,167,38,.12);color:var(--amber);border:1px solid rgba(255,167,38,.3);}
-.pill .x{cursor:pointer;opacity:.6;font-size:.9rem;line-height:1;}
+.pill .x{cursor:pointer;opacity:.6;font-size:.9rem;line-height:1;margin-left:2px;}
 .pill .x:hover{opacity:1;}
 .ks{font-size:.76rem;margin-top:5px;}
 .kok{color:var(--green);} .kerr{color:var(--red);}
@@ -122,7 +163,6 @@ input[type=password].inp{letter-spacing:.1em;}
 
 <div class="wrap">
 
-<!-- SETUP -->
 <div id="s0" class="scr on">
   <div class="card">
     <h2>Welcome to MailMind</h2>
@@ -134,7 +174,6 @@ input[type=password].inp{letter-spacing:.1em;}
   </div>
 </div>
 
-<!-- INBOX -->
 <div id="s1" class="scr">
   <div class="workspace">
     <div class="sidebar">
@@ -156,7 +195,6 @@ input[type=password].inp{letter-spacing:.1em;}
   </div>
 </div>
 
-<!-- DIGEST -->
 <div id="s2" class="scr">
   <div class="dh">
     <button class="btn bg2 sm" onclick="go('s1')">← Back</button>
@@ -166,7 +204,6 @@ input[type=password].inp{letter-spacing:.1em;}
   <div id="dbod" class="dbod"><div class="ph2">Generating…</div></div>
 </div>
 
-<!-- SETTINGS -->
 <div id="s3" class="scr">
   <div class="dh">
     <button class="btn bg2 sm" onclick="go('s1')">← Back</button>
@@ -174,7 +211,6 @@ input[type=password].inp{letter-spacing:.1em;}
   </div>
   <div class="sbod">
 
-    <!-- Gemini key -->
     <div class="sec">
       <div class="sectitle">🤖 Gemini API Key (Free)</div>
       <div class="srow">
@@ -188,7 +224,6 @@ input[type=password].inp{letter-spacing:.1em;}
       </div>
     </div>
 
-    <!-- Priority senders -->
     <div class="sec">
       <div class="sectitle">⭐ Priority Senders</div>
       <div class="srow">
@@ -202,7 +237,6 @@ input[type=password].inp{letter-spacing:.1em;}
       </div>
     </div>
 
-    <!-- Categories -->
     <div class="sec">
       <div class="sectitle">📂 Preferred Topics / Categories</div>
       <div class="srow">
@@ -216,7 +250,6 @@ input[type=password].inp{letter-spacing:.1em;}
       </div>
     </div>
 
-    <!-- Summary style -->
     <div class="sec">
       <div class="sectitle">📝 Summary Style</div>
       <div class="srow">
@@ -240,8 +273,7 @@ input[type=password].inp{letter-spacing:.1em;}
   </div>
 </div>
 
-</div><!-- /wrap -->
-<div id="toast"></div>
+</div><div id="toast"></div>
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────
@@ -274,7 +306,7 @@ function saveKey(){
 function addS(){
   const i=document.getElementById('sinp'); const v=i.value.trim();
   if(!v)return;
-  if(!S.p.senders.includes(v)){S.p.senders.push(v);sp();renderS();}
+  if(!S.p.senders.includes(v)){S.p.senders.push(v);sp();renderS();renderList();}
   i.value='';
 }
 function remS(v){S.p.senders=S.p.senders.filter(x=>x!==v);sp();renderS();renderList();}
@@ -373,6 +405,7 @@ function parse(msg){
   return{id:msg.id,from,subj,date,body,unread:msg.labelIds?.includes('UNREAD')??false,today};
 }
 
+// ── UTILS & HELPERS ──────────────────────────────────────
 function isToday(d){const n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();}
 function isPref(from){return S.p.senders.some(s=>from.toLowerCase().includes(s.toLowerCase()));}
 function logout(){S.token='';localStorage.removeItem('mm_t_'+VER);setBtn(false);hshow(false);go('s0');}
@@ -458,14 +491,14 @@ async function runDigest(){
 
 // ── DEMO DATA ────────────────────────────────────────────
 const DEMOS=[
-  {id:'d1',from:'Yashika (Coordinator)',subj:'SST Slide Submissions',date:td(),body:'Hey team, submit updated slides on the 1857 Revolt centers tonight so I can merge them. Match the framework layout from yesterday.',unread:true,today:true},
+  {id:'d1',from:'Monty (Coordinator)',subj:'SST Slide Submissions',date:td(),body:'Hey team, submit updated slides on the 1857 Revolt centers tonight so I can merge them. Match the framework layout from yesterday.',unread:true,today:true},
   {id:'d2',from:'Advik',subj:'PWA Config Update',date:td(),body:'Updated the app build files. Let me know if standalone backgrounds render fine on your test profiles.',unread:false,today:true},
   {id:'d3',from:'School Admin',subj:'Exam Schedule Released',date:td(),body:'Dear students, the final examination schedule has been uploaded. Please check your admit card status by Friday.',unread:true,today:true},
   {id:'d4',from:'GitHub',subj:'Deployment succeeded',date:td(),body:'Your latest push to main was deployed successfully to GitHub Pages. No errors detected.',unread:false,today:true},
 ];
 function td(){return new Date().toLocaleDateString([],{month:'short',day:'numeric'});}
 
-// ── UTILS ─────────────────────────────────────────────────
+// ── GENERAL UTILS ────────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function toast(m,ms=3200){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),ms);}
 </script>
