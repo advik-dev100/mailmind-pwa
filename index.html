@@ -1,1060 +1,473 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MailMind</title>
-  <meta name="theme-color" content="#121212">
-  <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="MailMind">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-
-  <style>
-    :root {
-      --bg: #121212;
-      --surface: #1e1e1e;
-      --surface-2: #252525;
-      --surface-hover: #2a2a2a;
-      --text: #e0e0e0;
-      --text-muted: #a0a0a0;
-      --accent: #4caf50;
-      --accent-dim: rgba(76,175,80,0.12);
-      --amber: #ffa726;
-      --amber-dim: rgba(255,167,38,0.12);
-      --blue: #42a5f5;
-      --blue-dim: rgba(66,165,245,0.12);
-      --red: #ef5350;
-      --border: #333;
-      --radius: 8px;
-      --radius-sm: 5px;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-
-    body { background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-
-    /* ── HEADER ── */
-    header {
-      background: var(--surface);
-      padding: 12px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-      gap: 10px;
-    }
-    h1 { font-size: 1.3rem; font-weight: 700; color: #fff; white-space: nowrap; }
-    .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-
-    /* ── BUTTONS ── */
-    .btn {
-      background: var(--accent);
-      color: #000;
-      border: none;
-      padding: 8px 14px;
-      border-radius: var(--radius-sm);
-      font-weight: 600;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: opacity 0.2s;
-      white-space: nowrap;
-    }
-    .btn:hover { opacity: 0.85; }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-amber { background: var(--amber); color: #000; }
-    .btn-blue  { background: var(--blue);  color: #000; }
-    .btn-red   { background: var(--red);   color: #fff; }
-    .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
-    .btn-ghost:hover { background: var(--surface-hover); color: #fff; }
-    .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
-
-    /* ── SCREENS ── */
-    .main-container { flex: 1; display: flex; overflow: hidden; position: relative; }
-    .screen { position: absolute; inset: 0; display: none; flex-direction: column; }
-    .screen.active { display: flex; }
-
-    /* ── SETUP SCREEN ── */
-    #screen-setup {
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      background: linear-gradient(135deg, #121212 0%, #1a2a1a 100%);
-    }
-    .setup-card {
-      background: var(--surface);
-      padding: 36px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      max-width: 440px;
-      width: 100%;
-      text-align: center;
-    }
-    .setup-card h2 { color: #fff; margin-bottom: 12px; font-size: 1.4rem; }
-    .setup-card p  { color: var(--text-muted); margin-bottom: 24px; font-size: 0.92rem; line-height: 1.6; }
-    .setup-actions { display: flex; flex-direction: column; gap: 10px; }
-
-    /* ── WORKSPACE ── */
-    #screen-inbox { flex-direction: column; }
-    .workspace { display: flex; flex: 1; gap: 0; overflow: hidden; }
-
-    /* ── SIDEBAR ── */
-    .sidebar {
-      width: 320px;
-      min-width: 260px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .panel-header {
-      padding: 12px 15px;
-      border-bottom: 1px solid var(--border);
-      font-weight: 600;
-      font-size: 0.9rem;
-      background: rgba(255,255,255,0.02);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-    .email-list { flex: 1; overflow-y: auto; }
-    .email-item {
-      padding: 13px 15px;
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      transition: background 0.15s;
-      position: relative;
-    }
-    .email-item:hover { background: var(--surface-hover); }
-    .email-item.unread { border-left: 3px solid var(--accent); background: var(--accent-dim); }
-    .email-item.preferred { border-left: 3px solid var(--amber); }
-    .email-item.unread.preferred { border-left: 3px solid var(--amber); background: var(--amber-dim); }
-    .email-meta { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.82rem; }
-    .email-from { font-weight: 600; color: #fff; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .email-date { color: var(--text-muted); font-size: 0.78rem; }
-    .email-subject { font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-muted); }
-    .email-tags { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
-    .tag {
-      font-size: 0.68rem;
-      padding: 1px 6px;
-      border-radius: 100px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-    .tag-preferred { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,167,38,0.3); }
-    .tag-ai        { background: var(--blue-dim);  color: var(--blue);  border: 1px solid rgba(66,165,245,0.3); }
-    .tag-category  { background: var(--accent-dim);color: var(--accent);border: 1px solid rgba(76,175,80,0.3); }
-
-    /* ── DETAIL PANEL ── */
-    .detail-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      background: var(--bg);
-    }
-    .detail-panel .panel-header { background: var(--surface); border-bottom: 1px solid var(--border); }
-    .detail-body { flex: 1; padding: 20px; overflow-y: auto; line-height: 1.7; font-size: 0.92rem; }
-
-    /* AI summary card inside detail */
-    .ai-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--blue);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      margin-bottom: 18px;
-    }
-    .ai-card-label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--blue);
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .ai-card-text { font-size: 0.9rem; color: var(--text); line-height: 1.65; }
-    .typing { display: inline-block; }
-    .typing::after { content: '▋'; animation: blink 0.8s step-end infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-    /* ── DIGEST SCREEN ── */
-    #screen-digest {
-      flex-direction: column;
-      padding: 0;
-      background: var(--bg);
-    }
-    .digest-header {
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-shrink: 0;
-    }
-    .digest-header h2 { font-size: 1.1rem; color: #fff; flex: 1; }
-    .digest-body { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
-    .digest-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-    .digest-card-header {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .digest-card-from { font-weight: 600; color: #fff; font-size: 0.9rem; flex: 1; }
-    .digest-card-subject { font-size: 0.8rem; color: var(--text-muted); }
-    .digest-card-summary { padding: 14px 16px; font-size: 0.88rem; line-height: 1.65; color: var(--text); }
-    .digest-preferred { border-left: 3px solid var(--amber); }
-    .digest-card-date { font-size: 0.75rem; color: var(--text-muted); }
-
-    /* ── SETTINGS PANEL ── */
-    #screen-settings {
-      flex-direction: column;
-      background: var(--bg);
-    }
-    .settings-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; max-width: 660px; margin: 0 auto; width: 100%; }
-    .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-    .settings-section-title {
-      padding: 13px 16px;
-      border-bottom: 1px solid var(--border);
-      font-weight: 700;
-      font-size: 0.82rem;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--text-muted);
-      background: rgba(255,255,255,0.02);
-    }
-    .settings-row {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .settings-row:last-child { border-bottom: none; }
-    .settings-row label { font-size: 0.88rem; font-weight: 600; color: var(--text); }
-    .settings-row p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
-    .settings-input {
-      width: 100%;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text);
-      font-size: 0.88rem;
-      padding: 8px 12px;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    .settings-input:focus { border-color: var(--accent); }
-    .settings-input::placeholder { color: var(--text-muted); }
-
-    /* Tag list UI */
-    .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
-    .tag-pill {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 4px 10px;
-      background: var(--accent-dim);
-      border: 1px solid rgba(76,175,80,0.3);
-      border-radius: 100px;
-      font-size: 0.8rem;
-      color: var(--accent);
-    }
-    .tag-pill.amber-pill { background: var(--amber-dim); border-color: rgba(255,167,38,0.3); color: var(--amber); }
-    .tag-pill .remove { cursor: pointer; opacity: 0.6; font-size: 0.9rem; line-height: 1; }
-    .tag-pill .remove:hover { opacity: 1; }
-    .tag-add-row { display: flex; gap: 8px; }
-    .tag-add-row input { flex: 1; }
-
-    /* Gemini key status */
-    .key-status { font-size: 0.78rem; margin-top: 4px; }
-    .key-ok  { color: var(--accent); }
-    .key-err { color: var(--red); }
-
-    /* Select */
-    .settings-select {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text);
-      font-size: 0.88rem;
-      padding: 8px 12px;
-      outline: none;
-      cursor: pointer;
-      width: 100%;
-    }
-    .settings-select option { background: var(--surface); }
-
-    /* ── TOAST ── */
-    #toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #323232;
-      color: #fff;
-      padding: 10px 22px;
-      border-radius: 4px;
-      font-size: 0.88rem;
-      z-index: 9999;
-      opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
-      white-space: nowrap;
-    }
-    #toast.show { opacity: 1; }
-
-    /* ── EMPTY / LOADING ── */
-    .placeholder { text-align: center; padding: 30px 20px; color: var(--text-muted); font-size: 0.88rem; }
-    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 6px; vertical-align: middle; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 600px) {
-      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); max-height: 45vh; }
-      .workspace { flex-direction: column; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MailMind</title>
+<meta name="theme-color" content="#121212">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<style>
+:root{--bg:#121212;--sur:#1e1e1e;--sur2:#252525;--hov:#2d2d2d;--txt:#e0e0e0;--muted:#888;--green:#4caf50;--amber:#ffa726;--blue:#42a5f5;--red:#ef5350;--bdr:#333;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',sans-serif;}
+body{background:var(--bg);color:var(--txt);display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+/* HEADER */
+header{background:var(--sur);padding:12px 20px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-shrink:0;}
+h1{font-size:1.2rem;font-weight:700;color:#fff;}
+.hbtns{display:flex;gap:8px;align-items:center;}
+/* BUTTONS */
+.btn{padding:8px 14px;border-radius:5px;border:none;font-weight:600;font-size:0.83rem;cursor:pointer;transition:opacity .2s;white-space:nowrap;}
+.btn:hover{opacity:.85;} .btn:disabled{opacity:.4;cursor:not-allowed;}
+.bg{background:var(--green);color:#000;}
+.ba{background:var(--amber);color:#000;}
+.bb{background:var(--blue);color:#000;}
+.br{background:var(--red);color:#fff;}
+.bg2{background:transparent;color:var(--muted);border:1px solid var(--bdr);}
+.bg2:hover{background:var(--hov);color:#fff;}
+.sm{padding:6px 11px;font-size:0.78rem;}
+/* SCREENS */
+.wrap{flex:1;display:flex;overflow:hidden;position:relative;}
+.scr{position:absolute;inset:0;display:none;flex-direction:column;}
+.scr.on{display:flex;}
+/* SETUP */
+#s0{justify-content:center;align-items:center;padding:20px;background:linear-gradient(135deg,#121212,#1a261a);}
+.card{background:var(--sur);padding:36px;border-radius:8px;border:1px solid var(--bdr);max-width:440px;width:100%;text-align:center;}
+.card h2{color:#fff;margin-bottom:12px;}
+.card p{color:var(--muted);margin-bottom:22px;font-size:.9rem;line-height:1.6;}
+.col{display:flex;flex-direction:column;gap:10px;}
+/* INBOX */
+#s1{flex-direction:column;}
+.workspace{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:310px;min-width:240px;background:var(--sur);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.ph{padding:11px 14px;border-bottom:1px solid var(--bdr);font-weight:600;font-size:.87rem;background:rgba(255,255,255,.02);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.elist{flex:1;overflow-y:auto;}
+.ei{padding:12px 14px;border-bottom:1px solid var(--bdr);cursor:pointer;transition:background .15s;}
+.ei:hover{background:var(--hov);}
+.ei.unread{border-left:3px solid var(--green);background:rgba(76,175,80,.07);}
+.ei.pref{border-left:3px solid var(--amber);}
+.ei.unread.pref{border-left:3px solid var(--amber);background:rgba(255,167,38,.07);}
+.emeta{display:flex;justify-content:space-between;margin-bottom:3px;font-size:.8rem;}
+.efrom{font-weight:600;color:#fff;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.edate{color:var(--muted);font-size:.75rem;}
+.esubj{font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.etags{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;}
+.tag{font-size:.65rem;padding:1px 7px;border-radius:100px;font-weight:700;letter-spacing:.3px;}
+.tp{background:rgba(255,167,38,.12);color:var(--amber);border:1px solid rgba(255,167,38,.3);}
+.tt{background:rgba(66,165,245,.12);color:var(--blue);border:1px solid rgba(66,165,245,.3);}
+/* DETAIL */
+.detail{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+.detail .ph{background:var(--sur);border-bottom:1px solid var(--bdr);}
+.dbody{flex:1;padding:20px;overflow-y:auto;line-height:1.7;font-size:.91rem;}
+.aicard{background:var(--sur);border:1px solid var(--bdr);border-left:3px solid var(--blue);border-radius:8px;padding:14px 16px;margin-bottom:18px;}
+.ailbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--blue);margin-bottom:8px;}
+.aitxt{font-size:.89rem;color:var(--txt);line-height:1.65;}
+/* DIGEST */
+#s2{flex-direction:column;background:var(--bg);}
+.dh{padding:13px 20px;border-bottom:1px solid var(--bdr);background:var(--sur);display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.dh h2{font-size:1rem;color:#fff;flex:1;}
+.dbod{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;}
+.dc{background:var(--sur);border:1px solid var(--bdr);border-radius:8px;overflow:hidden;}
+.dc.dp{border-left:3px solid var(--amber);}
+.dch{padding:11px 15px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center;}
+.dcfrom{font-weight:600;color:#fff;font-size:.88rem;}
+.dcsubj{font-size:.78rem;color:var(--muted);}
+.dcdate{font-size:.73rem;color:var(--muted);}
+.dcs{padding:13px 15px;font-size:.87rem;line-height:1.65;color:var(--txt);}
+/* SETTINGS */
+#s3{flex-direction:column;background:var(--bg);}
+.sbod{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;max-width:640px;margin:0 auto;width:100%;}
+.sec{background:var(--sur);border:1px solid var(--bdr);border-radius:8px;overflow:hidden;}
+.sectitle{padding:11px 15px;border-bottom:1px solid var(--bdr);font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);background:rgba(255,255,255,.02);}
+.srow{padding:14px 15px;border-bottom:1px solid var(--bdr);}
+.srow:last-child{border-bottom:none;}
+.srow label{display:block;font-size:.87rem;font-weight:600;color:var(--txt);margin-bottom:4px;}
+.srow p{font-size:.78rem;color:var(--muted);line-height:1.5;margin-bottom:9px;}
+/* INPUTS */
+input.inp,select.inp{width:100%;background:var(--sur2);border:1px solid var(--bdr);border-radius:5px;color:var(--txt);font-size:.87rem;padding:9px 12px;outline:none;transition:border-color .15s;}
+input.inp:focus,select.inp:focus{border-color:var(--green);}
+input.inp::placeholder{color:var(--muted);}
+input[type=password].inp{letter-spacing:.1em;}
+.row2{display:flex;gap:8px;margin-top:8px;}
+.row2 input{flex:1;}
+/* TAG PILLS */
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:.79rem;}
+.pill.g{background:rgba(76,175,80,.12);color:var(--green);border:1px solid rgba(76,175,80,.3);}
+.pill.a{background:rgba(255,167,38,.12);color:var(--amber);border:1px solid rgba(255,167,38,.3);}
+.pill .x{cursor:pointer;opacity:.6;font-size:.9rem;line-height:1;}
+.pill .x:hover{opacity:1;}
+.ks{font-size:.76rem;margin-top:5px;}
+.kok{color:var(--green);} .kerr{color:var(--red);}
+/* TOAST */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2e2e2e;color:#fff;padding:10px 22px;border-radius:5px;font-size:.86rem;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.6);white-space:nowrap;}
+#toast.on{opacity:1;}
+/* MISC */
+.ph2{text-align:center;padding:28px 16px;color:var(--muted);font-size:.86rem;}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid var(--bdr);border-top-color:var(--green);border-radius:50%;animation:sp .7s linear infinite;margin-right:5px;vertical-align:middle;}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(max-width:600px){.sidebar{width:100%;border-right:none;border-bottom:1px solid var(--bdr);max-height:44vh;}.workspace{flex-direction:column;}}
+</style>
 </head>
 <body>
 
 <header>
   <h1>✉ MailMind</h1>
-  <div class="header-actions">
-    <button class="btn btn-amber btn-sm" id="btn-digest" onclick="showDigest()" style="display:none;">📋 Today's Digest</button>
-    <button class="btn btn-blue btn-sm"  id="btn-settings" onclick="showSettings()" style="display:none;">⚙ Settings</button>
-    <button class="btn btn-sm" id="gmail-auth-btn" onclick="handleGmailAuth()">Connect Gmail</button>
+  <div class="hbtns">
+    <button class="btn ba sm" id="hd" onclick="goDigest()" style="display:none">📋 Today's Digest</button>
+    <button class="btn bb sm" id="hs" onclick="goSettings()" style="display:none">⚙ Settings</button>
+    <button class="btn bg sm" id="ha" onclick="doAuth()">Connect Gmail</button>
   </div>
 </header>
 
-<div class="main-container">
+<div class="wrap">
 
-  <!-- ════════════════ SETUP SCREEN ════════════════ -->
-  <div id="screen-setup" class="screen active">
-    <div class="setup-card">
-      <h2>Welcome to MailMind</h2>
-      <p>Connect your Gmail account via secure OAuth 2.0 to load your inbox, set priority preferences, and get AI-powered daily digests using Gemini.</p>
-      <div class="setup-actions">
-        <button class="btn" onclick="handleGmailAuth()">Sign in with Google</button>
-        <button class="btn btn-ghost" onclick="skipSetup()">Demo Mode</button>
+<!-- SETUP -->
+<div id="s0" class="scr on">
+  <div class="card">
+    <h2>Welcome to MailMind</h2>
+    <p>Connect Gmail via OAuth 2.0, set your preferences, and get AI-powered daily digests using the free Gemini API.</p>
+    <div class="col">
+      <button class="btn bg" onclick="doAuth()">Sign in with Google</button>
+      <button class="btn bg2" onclick="doDemo()">Try Demo Mode</button>
+    </div>
+  </div>
+</div>
+
+<!-- INBOX -->
+<div id="s1" class="scr">
+  <div class="workspace">
+    <div class="sidebar">
+      <div class="ph">
+        <span>Inbox</span>
+        <button class="btn ba sm" onclick="goDigest()">✦ Summarise Today</button>
+      </div>
+      <div id="elist" class="elist"><div class="ph2">Loading…</div></div>
+    </div>
+    <div class="detail">
+      <div class="ph">
+        <span id="dtitle" style="font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">Select an email</span>
+        <button class="btn bb sm" id="bsum" onclick="sumOne()" style="display:none;margin-left:8px;">✦ AI Summary</button>
+      </div>
+      <div id="dbody" class="dbody">
+        <div class="ph2" style="padding-top:60px;">Select an email from the list.<br><br>Click <b>✦ Summarise Today</b> to get a Gemini AI digest of all today's emails.</div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ════════════════ INBOX SCREEN ════════════════ -->
-  <div id="screen-inbox" class="screen">
-    <div class="workspace">
-
-      <!-- Sidebar: email list -->
-      <div class="sidebar">
-        <div class="panel-header">
-          <span>Primary Inbox</span>
-          <button class="btn btn-amber btn-sm" onclick="runDailyDigest()" id="btn-summarise">✦ Summarise Today</button>
-        </div>
-        <div id="email-list-container" class="email-list">
-          <div class="placeholder">Loading emails…</div>
-        </div>
-      </div>
-
-      <!-- Detail: email reader + AI summary -->
-      <div class="detail-panel">
-        <div class="panel-header">
-          <span id="detail-title">Select an email</span>
-          <button class="btn btn-blue btn-sm" id="btn-summarise-one" onclick="summariseCurrentEmail()" style="display:none;">✦ AI Summary</button>
-        </div>
-        <div id="email-detail-body" class="detail-body">
-          <div class="placeholder" style="padding-top:60px;">Select an email from the list to read it here.<br><br>Use <strong>✦ Summarise Today</strong> to get an AI digest of all today's emails.</div>
-        </div>
-      </div>
-
-    </div>
+<!-- DIGEST -->
+<div id="s2" class="scr">
+  <div class="dh">
+    <button class="btn bg2 sm" onclick="go('s1')">← Back</button>
+    <h2>📋 Today's AI Digest</h2>
+    <span id="ddate" style="font-size:.78rem;color:var(--muted);"></span>
   </div>
+  <div id="dbod" class="dbod"><div class="ph2">Generating…</div></div>
+</div>
 
-  <!-- ════════════════ DIGEST SCREEN ════════════════ -->
-  <div id="screen-digest" class="screen">
-    <div class="digest-header">
-      <button class="btn btn-ghost btn-sm" onclick="showInbox()">← Back</button>
-      <h2>📋 Today's AI Digest</h2>
-      <span id="digest-date" style="font-size:0.8rem;color:var(--text-muted);"></span>
-    </div>
-    <div id="digest-body" class="digest-body">
-      <div class="placeholder">Generating digest…</div>
-    </div>
+<!-- SETTINGS -->
+<div id="s3" class="scr">
+  <div class="dh">
+    <button class="btn bg2 sm" onclick="go('s1')">← Back</button>
+    <h2>⚙ Preferences</h2>
   </div>
+  <div class="sbod">
 
-  <!-- ════════════════ SETTINGS SCREEN ════════════════ -->
-  <div id="screen-settings" class="screen">
-    <div class="digest-header">
-      <button class="btn btn-ghost btn-sm" onclick="showInbox()">← Back</button>
-      <h2>⚙ Preferences</h2>
+    <!-- Gemini key -->
+    <div class="sec">
+      <div class="sectitle">🤖 Gemini API Key (Free)</div>
+      <div class="srow">
+        <label>API Key</label>
+        <p>Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--green);">aistudio.google.com</a> — no credit card needed.</p>
+        <div class="row2">
+          <input type="password" class="inp" id="gkey" placeholder="Paste your Gemini key here  e.g. AIzaSy…" />
+          <button class="btn bg sm" onclick="saveKey()">Save</button>
+        </div>
+        <div id="kstat" class="ks"></div>
+      </div>
     </div>
-    <div class="settings-body">
 
-      <!-- Gemini API Key -->
-      <div class="settings-section">
-        <div class="settings-section-title">🤖 Gemini API Key (Free)</div>
-        <div class="settings-row">
-          <label>API Key</label>
-          <p>Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent);">aistudio.google.com</a> — no credit card needed.</p>
-          <div class="tag-add-row">
-            <input type="password" class="settings-input" id="gemini-key-input" placeholder="AIza…" />
-            <button class="btn btn-sm" onclick="saveGeminiKey()">Save</button>
-          </div>
-          <div id="gemini-key-status" class="key-status"></div>
+    <!-- Priority senders -->
+    <div class="sec">
+      <div class="sectitle">⭐ Priority Senders</div>
+      <div class="srow">
+        <label>Preferred email addresses or names</label>
+        <p>Emails from these people will be highlighted in amber and ranked first. Type a name or email and press Add.</p>
+        <div class="pills" id="spills"></div>
+        <div class="row2">
+          <input type="text" class="inp" id="sinp" placeholder="e.g.  yashika@school.com  or  Mom" onkeydown="if(event.key==='Enter')addS()" />
+          <button class="btn ba sm" onclick="addS()">+ Add</button>
         </div>
       </div>
-
-      <!-- Priority Senders -->
-      <div class="settings-section">
-        <div class="settings-section-title">⭐ Priority Senders</div>
-        <div class="settings-row">
-          <label>Preferred email addresses or names</label>
-          <p>Emails from these senders will be highlighted and ranked higher in AI digests.</p>
-          <div class="tag-list" id="senders-list"></div>
-          <div class="tag-add-row" style="margin-top:8px;">
-            <input type="text" class="settings-input" id="sender-input" placeholder="e.g. boss@company.com or Yashika" onkeydown="if(event.key==='Enter')addSender()" />
-            <button class="btn btn-sm btn-amber" onclick="addSender()">Add</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Preferred Categories -->
-      <div class="settings-section">
-        <div class="settings-section-title">📂 Preferred Email Topics / Categories</div>
-        <div class="settings-row">
-          <label>Topics the AI should prioritise</label>
-          <p>AI summaries will highlight content matching these topics. E.g. "project updates", "invoices", "school".</p>
-          <div class="tag-list" id="categories-list"></div>
-          <div class="tag-add-row" style="margin-top:8px;">
-            <input type="text" class="settings-input" id="category-input" placeholder="e.g. invoices, school, deadlines" onkeydown="if(event.key==='Enter')addCategory()" />
-            <button class="btn btn-sm" onclick="addCategory()">Add</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Summary style -->
-      <div class="settings-section">
-        <div class="settings-section-title">📝 Summary Style</div>
-        <div class="settings-row">
-          <label>Summary length</label>
-          <select class="settings-select" id="pref-length" onchange="savePrefs()">
-            <option value="brief">Brief (1-2 sentences)</option>
-            <option value="standard" selected>Standard (3-4 sentences)</option>
-            <option value="detailed">Detailed (full breakdown)</option>
-          </select>
-        </div>
-        <div class="settings-row">
-          <label>Digest covers</label>
-          <select class="settings-select" id="pref-scope" onchange="savePrefs()">
-            <option value="today" selected>Today's emails only</option>
-            <option value="all">All loaded emails</option>
-          </select>
-        </div>
-      </div>
-
-      <button class="btn" onclick="showInbox()" style="width:100%;">✓ Save & Go to Inbox</button>
-
     </div>
+
+    <!-- Categories -->
+    <div class="sec">
+      <div class="sectitle">📂 Preferred Topics / Categories</div>
+      <div class="srow">
+        <label>Topics Gemini should prioritise</label>
+        <p>Summaries will highlight content matching these. Type a topic and press Add.</p>
+        <div class="pills" id="cpills"></div>
+        <div class="row2">
+          <input type="text" class="inp" id="cinp" placeholder="e.g.  invoices   school   deadlines   project" onkeydown="if(event.key==='Enter')addC()" />
+          <button class="btn bg sm" onclick="addC()">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary style -->
+    <div class="sec">
+      <div class="sectitle">📝 Summary Style</div>
+      <div class="srow">
+        <label>Summary length</label>
+        <select class="inp" id="plen" onchange="saveP()">
+          <option value="brief">Brief — 1 to 2 sentences</option>
+          <option value="standard" selected>Standard — 3 to 4 sentences</option>
+          <option value="detailed">Detailed — full breakdown with action points</option>
+        </select>
+      </div>
+      <div class="srow">
+        <label>Digest covers</label>
+        <select class="inp" id="pscope" onchange="saveP()">
+          <option value="today" selected>Today's emails only</option>
+          <option value="all">All loaded emails</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn bg" style="width:100%;padding:12px;" onclick="go('s1')">✓ Save &amp; Go to Inbox</button>
   </div>
+</div>
 
-</div><!-- /main-container -->
-
+</div><!-- /wrap -->
 <div id="toast"></div>
 
 <script>
-/* ============================================================
-   VERSION
-============================================================ */
-const APP_VERSION = 'v5';
+// ── CONFIG ──────────────────────────────────────────────
+const CLIENT_ID   = '437875602906-4mmoiavhj9m3dslh6tvh1pivdqobnk52.apps.googleusercontent.com';
+const REDIRECT    = 'https://advik-dev100.github.io/mailmind-pwa/';
+const GEM_MODEL   = 'gemini-1.5-flash';
+const VER         = 'v6';
 
-/* ============================================================
-   CONFIG
-============================================================ */
-const GOOGLE_CLIENT_ID = '437875602906-4mmoiavhj9m3dslh6tvh1pivdqobnk52.apps.googleusercontent.com';
-const REDIRECT_URI     = 'https://advik-dev100.github.io/mailmind-pwa/';
-const GEMINI_MODEL     = 'gemini-1.5-flash'; // free tier
-
-/* ============================================================
-   STATE
-============================================================ */
-let state = {
-  gmailToken : '',
-  emails     : [],
-  currentId  : null,
-  prefs: {
-    geminiKey  : '',
-    senders    : [],   // ["boss@co.com", "Yashika"]
-    categories : [],   // ["invoices", "school"]
-    length     : 'standard',
-    scope      : 'today',
-  }
+// ── STATE ────────────────────────────────────────────────
+let S = {
+  token : '',
+  emails: [],
+  curId : null,
+  p: { key:'', senders:[], cats:[], len:'standard', scope:'today' }
 };
 
-/* ============================================================
-   DEMO DATA
-============================================================ */
-const DEMO_EMAILS = [
-  { id:'d1', from:'Yashika (Coordinator)', subject:'SST Slide Submissions', date: todayStr(), body:'Hey team, submit updated slides on the 1857 Revolt centers tonight so I can merge them. Match the framework layout from yesterday.', unread:true },
-  { id:'d2', from:'Advik', subject:'PWA Config Update', date: todayStr(), body:'Updated the app build files. Let me know if standalone backgrounds render fine on your test profiles.', unread:false },
-  { id:'d3', from:'School Admin', subject:'Exam Schedule Released', date: todayStr(), body:'Dear students, the final examination schedule has been uploaded to the portal. Please check your admit card status by Friday.', unread:true },
-  { id:'d4', from:'GitHub', subject:'[mailmind-pwa] Deployment succeeded', date: todayStr(), body:'Your latest push to main was deployed successfully to GitHub Pages. No errors detected.', unread:false },
-];
+// ── PREFS ────────────────────────────────────────────────
+function lp(){ try{ const d=JSON.parse(localStorage.getItem('mm_p_'+VER)||'{}'); S.p={...S.p,...d}; }catch{} }
+function sp(){ localStorage.setItem('mm_p_'+VER,JSON.stringify(S.p)); }
+function saveP(){ S.p.len=document.getElementById('plen').value; S.p.scope=document.getElementById('pscope').value; sp(); }
 
-function todayStr() {
-  return new Date().toLocaleDateString([],{month:'short',day:'numeric'});
+function saveKey(){
+  const v=document.getElementById('gkey').value.trim();
+  if(!v){toast('Paste your Gemini API key first.');return;}
+  S.p.key=v; sp();
+  document.getElementById('kstat').innerHTML='<span class="kok">✓ Key saved</span>';
+  toast('✓ Gemini key saved');
 }
 
-/* ============================================================
-   PREFS — load/save from localStorage
-============================================================ */
-function loadPrefs() {
-  try {
-    const saved = JSON.parse(localStorage.getItem('mm_prefs_v5') || '{}');
-    state.prefs = { ...state.prefs, ...saved };
-  } catch {}
+function addS(){
+  const i=document.getElementById('sinp'); const v=i.value.trim();
+  if(!v)return;
+  if(!S.p.senders.includes(v)){S.p.senders.push(v);sp();renderS();}
+  i.value='';
+}
+function remS(v){S.p.senders=S.p.senders.filter(x=>x!==v);sp();renderS();renderList();}
+function renderS(){
+  const el=document.getElementById('spills');
+  if(!el)return;
+  el.innerHTML=S.p.senders.map(s=>`<span class="pill a">${esc(s)}<span class="x" onclick="remS('${esc(s)}')">✕</span></span>`).join('');
 }
 
-function savePrefs() {
-  state.prefs.length = document.getElementById('pref-length')?.value || 'standard';
-  state.prefs.scope  = document.getElementById('pref-scope')?.value  || 'today';
-  localStorage.setItem('mm_prefs_v5', JSON.stringify(state.prefs));
+function addC(){
+  const i=document.getElementById('cinp'); const v=i.value.trim();
+  if(!v)return;
+  if(!S.p.cats.includes(v)){S.p.cats.push(v);sp();renderC();}
+  i.value='';
+}
+function remC(v){S.p.cats=S.p.cats.filter(x=>x!==v);sp();renderC();}
+function renderC(){
+  const el=document.getElementById('cpills');
+  if(!el)return;
+  el.innerHTML=S.p.cats.map(c=>`<span class="pill g">${esc(c)}<span class="x" onclick="remC('${esc(c)}')">✕</span></span>`).join('');
 }
 
-function saveGeminiKey() {
-  const val = document.getElementById('gemini-key-input').value.trim();
-  if (!val) { showToast('Paste your Gemini API key first.'); return; }
-  state.prefs.geminiKey = val;
-  savePrefs();
-  document.getElementById('gemini-key-status').innerHTML = '<span class="key-ok">✓ Key saved</span>';
-  showToast('✓ Gemini key saved');
+function loadSettingsUI(){
+  const ki=document.getElementById('gkey'); if(ki) ki.value=S.p.key||'';
+  if(S.p.key) document.getElementById('kstat').innerHTML='<span class="kok">✓ Key saved</span>';
+  const pl=document.getElementById('plen'); if(pl) pl.value=S.p.len;
+  const ps=document.getElementById('pscope'); if(ps) ps.value=S.p.scope;
+  renderS(); renderC();
 }
 
-function addSender() {
-  const inp = document.getElementById('sender-input');
-  const val = inp.value.trim();
-  if (!val) return;
-  if (!state.prefs.senders.includes(val)) {
-    state.prefs.senders.push(val);
-    savePrefs();
-    renderSenderTags();
-    renderEmailList(); // refresh highlights
-  }
-  inp.value = '';
+// ── SW CLEANUP ───────────────────────────────────────────
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));
+  caches.keys().then(k=>k.forEach(x=>caches.delete(x)));
 }
 
-function removeSender(s) {
-  state.prefs.senders = state.prefs.senders.filter(x => x !== s);
-  savePrefs();
-  renderSenderTags();
-  renderEmailList();
+// ── INIT ─────────────────────────────────────────────────
+lp();
+window.onload=function(){
+  try{
+    const f=new URLSearchParams(window.location.hash.substring(1));
+    const t=f.get('access_token');
+    if(t){ S.token=t.trim(); localStorage.setItem('mm_t_'+VER,S.token); window.history.replaceState({},'',location.pathname); signedIn(); return; }
+    const sv=localStorage.getItem('mm_t_'+VER);
+    if(sv&&sv.length>10){ S.token=sv; signedIn(); }
+  }catch(e){console.error(e);}
+};
+
+function signedIn(){ setBtn(true); hshow(true); go('s1'); fetchMail(); }
+
+// ── AUTH ─────────────────────────────────────────────────
+function doAuth(){
+  if(S.token){ S.token=''; localStorage.removeItem('mm_t_'+VER); S.emails=[]; setBtn(false); hshow(false); go('s0'); toast('Disconnected.'); return; }
+  const p=new URLSearchParams({client_id:CLIENT_ID,redirect_uri:REDIRECT,response_type:'token',scope:'https://www.googleapis.com/auth/gmail.readonly',prompt:'consent'});
+  location.href='https://accounts.google.com/o/oauth2/v2/auth?'+p;
+}
+function setBtn(in_){
+  const b=document.getElementById('ha');
+  b.textContent=in_?'Disconnect':'Connect Gmail';
+  b.className=in_?'btn br sm':'btn bg sm';
+}
+function hshow(v){ ['hd','hs'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display=v?'':'none';}); }
+function doDemo(){ S.emails=DEMOS; go('s1'); hshow(true); renderList(); }
+
+// ── SCREENS ──────────────────────────────────────────────
+function go(id){ document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on')); document.getElementById(id).classList.add('on'); }
+function goSettings(){ go('s3'); loadSettingsUI(); }
+function goDigest(){ go('s2'); runDigest(); }
+
+// ── GMAIL FETCH ──────────────────────────────────────────
+async function fetchMail(){
+  if(!S.token)return;
+  document.getElementById('elist').innerHTML='<div class="ph2"><span class="spin"></span>Fetching inbox…</div>';
+  try{
+    const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=25&q=category%3Aprimary',{headers:{'Authorization':'Bearer '+S.token}});
+    if(!r.ok){ if(r.status===401){logout();toast('Session expired, sign in again.');}else{document.getElementById('elist').innerHTML='<div class="ph2">API error '+r.status+'</div>';} return; }
+    const d=await r.json();
+    if(!d.messages?.length){document.getElementById('elist').innerHTML='<div class="ph2">Inbox empty.</div>';return;}
+    const msgs=await Promise.all(d.messages.map(m=>fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+m.id+'?format=full',{headers:{'Authorization':'Bearer '+S.token}}).then(x=>x.json())));
+    S.emails=msgs.map(parse);
+    renderList();
+  }catch(e){console.error(e);document.getElementById('elist').innerHTML='<div class="ph2">Network error.</div>';}
 }
 
-function addCategory() {
-  const inp = document.getElementById('category-input');
-  const val = inp.value.trim();
-  if (!val) return;
-  if (!state.prefs.categories.includes(val)) {
-    state.prefs.categories.push(val);
-    savePrefs();
-    renderCategoryTags();
-  }
-  inp.value = '';
+function parse(msg){
+  const H=msg.payload?.headers||[];
+  const g=n=>H.find(h=>h.name.toLowerCase()===n.toLowerCase())?.value||'';
+  const from=g('from').replace(/<.*>/,'').replace(/"/g,'').trim()||'Unknown';
+  const subj=g('subject')||'(No Subject)';
+  const dr=g('date'); const date=dr?new Date(dr).toLocaleDateString([],{month:'short',day:'numeric'}):'';
+  const today=dr?isToday(new Date(dr)):false;
+  let body=msg.snippet||'';
+  const fp=parts=>{if(!parts)return null;for(const p of parts){if(p.mimeType==='text/plain'&&p.body?.data)return p.body.data;if(p.parts){const f=fp(p.parts);if(f)return f;}}return null;};
+  const raw=msg.payload?.body?.data||fp(msg.payload?.parts);
+  if(raw){try{body=decodeURIComponent(escape(atob(raw.replace(/-/g,'+').replace(/_/g,'/'))));}catch{}}
+  return{id:msg.id,from,subj,date,body,unread:msg.labelIds?.includes('UNREAD')??false,today};
 }
 
-function removeCategory(c) {
-  state.prefs.categories = state.prefs.categories.filter(x => x !== c);
-  savePrefs();
-  renderCategoryTags();
-}
+function isToday(d){const n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();}
+function isPref(from){return S.p.senders.some(s=>from.toLowerCase().includes(s.toLowerCase()));}
+function logout(){S.token='';localStorage.removeItem('mm_t_'+VER);setBtn(false);hshow(false);go('s0');}
 
-function renderSenderTags() {
-  const el = document.getElementById('senders-list');
-  if (!el) return;
-  el.innerHTML = state.prefs.senders.map(s =>
-    `<div class="tag-pill amber-pill">${escHtml(s)} <span class="remove" onclick="removeSender('${escHtml(s)}')">✕</span></div>`
-  ).join('');
-}
-
-function renderCategoryTags() {
-  const el = document.getElementById('categories-list');
-  if (!el) return;
-  el.innerHTML = state.prefs.categories.map(c =>
-    `<div class="tag-pill">${escHtml(c)} <span class="remove" onclick="removeCategory('${escHtml(c)}')">✕</span></div>`
-  ).join('');
-}
-
-function loadSettingsUI() {
-  const ki = document.getElementById('gemini-key-input');
-  if (ki) ki.value = state.prefs.geminiKey || '';
-  if (state.prefs.geminiKey) {
-    document.getElementById('gemini-key-status').innerHTML = '<span class="key-ok">✓ Key saved</span>';
-  }
-  const pl = document.getElementById('pref-length');
-  const ps = document.getElementById('pref-scope');
-  if (pl) pl.value = state.prefs.length;
-  if (ps) ps.value = state.prefs.scope;
-  renderSenderTags();
-  renderCategoryTags();
-}
-
-/* ============================================================
-   CACHE / SW CLEANUP
-============================================================ */
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(r => r.unregister());
+// ── RENDER LIST ──────────────────────────────────────────
+function renderList(){
+  const el=document.getElementById('elist');
+  if(!S.emails.length){el.innerHTML='<div class="ph2">No emails.</div>';return;}
+  const sorted=[...S.emails].sort((a,b)=>{const ap=isPref(a.from)?0:1,bp=isPref(b.from)?0:1;if(ap!==bp)return ap-bp;return (b.unread?1:0)-(a.unread?1:0);});
+  el.innerHTML='';
+  sorted.forEach(e=>{
+    const pref=isPref(e.from);
+    const d=document.createElement('div');
+    d.className='ei'+(e.unread?' unread':'')+(pref?' pref':'');
+    d.onclick=()=>selEmail(e.id);
+    d.innerHTML=`<div class="emeta"><span class="efrom">${esc(e.from)}</span><span class="edate">${esc(e.date)}</span></div>
+<div class="esubj">${esc(e.subj)}</div>
+<div class="etags">${pref?'<span class="tag tp">⭐ Priority</span>':''}${e.today?'<span class="tag tt">Today</span>':''}</div>`;
+    el.appendChild(d);
   });
-  caches.keys().then(keys => keys.forEach(k => {
-    if (!k.includes(APP_VERSION)) caches.delete(k);
+}
+
+// ── SELECT EMAIL ─────────────────────────────────────────
+function selEmail(id){
+  const e=S.emails.find(x=>x.id===id); if(!e)return;
+  e.unread=false; S.curId=id; renderList();
+  document.getElementById('dtitle').textContent=e.subj;
+  document.getElementById('bsum').style.display='';
+  document.getElementById('dbody').innerHTML=`
+<div style="margin-bottom:15px;font-size:.82rem;color:var(--muted)"><b style="color:var(--txt)">From:</b> ${esc(e.from)}<br><b style="color:var(--txt)">Date:</b> ${esc(e.date)}</div>
+<div style="white-space:pre-wrap;word-break:break-word;line-height:1.75">${esc(e.body)}</div>`;
+}
+
+// ── GEMINI CALL ──────────────────────────────────────────
+async function gem(prompt){
+  if(!S.p.key){toast('⚠ Add your free Gemini key in ⚙ Settings first.');throw new Error('no key');}
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEM_MODEL}:generateContent?key=${S.p.key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+  if(!r.ok){const t=await r.text();console.error('Gemini',r.status,t);if(r.status===400||r.status===403)toast('⚠ Invalid Gemini key — check Settings.');throw new Error('gem '+r.status);}
+  const d=await r.json();
+  return d.candidates?.[0]?.content?.parts?.[0]?.text||'(no response)';
+}
+
+function prefCtx(){
+  const lines=[];
+  if(S.p.senders.length) lines.push('Priority senders (flag as important): '+S.p.senders.join(', '));
+  if(S.p.cats.length)    lines.push('Preferred topics to highlight: '+S.p.cats.join(', '));
+  return lines.length?'User preferences:\n'+lines.join('\n')+'\n':'';
+}
+
+const LENS={brief:'1-2 sentences',standard:'2-3 sentences',detailed:'a detailed paragraph with action points'};
+
+// ── SUMMARISE ONE EMAIL ──────────────────────────────────
+async function sumOne(){
+  const e=S.emails.find(x=>x.id===S.curId); if(!e)return;
+  const btn=document.getElementById('bsum'); btn.disabled=true; btn.textContent='⏳…';
+  const old=document.getElementById('dbody').innerHTML;
+  document.getElementById('dbody').innerHTML=`<div class="aicard"><div class="ailbl">✦ AI Summary</div><div class="aitxt" id="ait" style="color:var(--muted)"><span class="spin"></span> Generating…</div></div>`+old;
+  try{
+    const txt=await gem(`You are MailMind, an AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action is needed, start with ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2500)}\n\nSummary:`);
+    document.getElementById('ait').textContent=txt; e.sum=txt;
+  }catch{document.getElementById('ait').textContent='Could not generate summary.';}
+  btn.disabled=false; btn.textContent='✦ AI Summary';
+}
+
+// ── DAILY DIGEST ─────────────────────────────────────────
+async function runDigest(){
+  const btn=document.querySelector('#s1 .ba');
+  document.getElementById('ddate').textContent=S.p.scope==='today'?'Today, '+new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'}):'All loaded emails';
+  const pool=S.p.scope==='today'?S.emails.filter(e=>e.today||!S.token):S.emails;
+  const dbod=document.getElementById('dbod');
+  if(!pool.length){dbod.innerHTML='<div class="ph2">No emails to summarise. Try changing scope to "All" in ⚙ Settings.</div>';return;}
+  dbod.innerHTML=pool.map(e=>`<div class="dc${isPref(e.from)?' dp':''}"><div class="dch"><div><div class="dcfrom">${esc(e.from)}</div><div class="dcsubj">${esc(e.subj)}</div></div><div class="dcdate">${esc(e.date)}</div></div><div class="dcs" id="dc_${e.id}"><span class="spin"></span> Summarising…</div></div>`).join('');
+  await Promise.all(pool.map(async e=>{
+    try{
+      const txt=await gem(`You are MailMind, an AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action needed, prefix with ⚡ ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2000)}\n\nSummary:`);
+      const el=document.getElementById('dc_'+e.id);
+      if(el) el.innerHTML=esc(txt).replace('⚡ ACTION REQUIRED','<b style="color:var(--amber)">⚡ ACTION REQUIRED</b>');
+      e.sum=txt;
+    }catch{const el=document.getElementById('dc_'+e.id);if(el)el.textContent='Could not summarise.';}
   }));
+  toast('✓ Digest ready');
 }
 
-/* ============================================================
-   INIT
-============================================================ */
-loadPrefs();
+// ── DEMO DATA ────────────────────────────────────────────
+const DEMOS=[
+  {id:'d1',from:'Yashika (Coordinator)',subj:'SST Slide Submissions',date:td(),body:'Hey team, submit updated slides on the 1857 Revolt centers tonight so I can merge them. Match the framework layout from yesterday.',unread:true,today:true},
+  {id:'d2',from:'Advik',subj:'PWA Config Update',date:td(),body:'Updated the app build files. Let me know if standalone backgrounds render fine on your test profiles.',unread:false,today:true},
+  {id:'d3',from:'School Admin',subj:'Exam Schedule Released',date:td(),body:'Dear students, the final examination schedule has been uploaded. Please check your admit card status by Friday.',unread:true,today:true},
+  {id:'d4',from:'GitHub',subj:'Deployment succeeded',date:td(),body:'Your latest push to main was deployed successfully to GitHub Pages. No errors detected.',unread:false,today:true},
+];
+function td(){return new Date().toLocaleDateString([],{month:'short',day:'numeric'});}
 
-window.onload = function () {
-  try {
-    const frag = new URLSearchParams(window.location.hash.substring(1));
-    const token = frag.get('access_token');
-    if (token) {
-      state.gmailToken = token.trim();
-      localStorage.setItem('mm_token_' + APP_VERSION, state.gmailToken);
-      window.history.replaceState({}, document.title, window.location.pathname);
-      onSignedIn();
-      return;
-    }
-    const saved = localStorage.getItem('mm_token_' + APP_VERSION);
-    if (saved && saved.length > 10) {
-      state.gmailToken = saved;
-      onSignedIn();
-    }
-  } catch(e) { console.error(e); }
-};
-
-function onSignedIn() {
-  updateAuthBtn(true);
-  switchScreen('inbox');
-  showHeaderBtns(true);
-  fetchRealGmailInbox();
-}
-
-/* ============================================================
-   AUTH
-============================================================ */
-function handleGmailAuth() {
-  if (state.gmailToken) {
-    state.gmailToken = '';
-    localStorage.removeItem('mm_token_' + APP_VERSION);
-    state.emails = [];
-    updateAuthBtn(false);
-    showHeaderBtns(false);
-    switchScreen('setup');
-    showToast('Disconnected.');
-  } else {
-    const p = new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      redirect_uri: REDIRECT_URI,
-      response_type: 'token',
-      scope: 'https://www.googleapis.com/auth/gmail.readonly',
-      prompt: 'consent'
-    });
-    window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + p.toString();
-  }
-}
-
-function updateAuthBtn(loggedIn) {
-  const b = document.getElementById('gmail-auth-btn');
-  if (!b) return;
-  b.textContent = loggedIn ? 'Disconnect' : 'Connect Gmail';
-  b.className = loggedIn ? 'btn btn-red btn-sm' : 'btn btn-sm';
-}
-
-function showHeaderBtns(show) {
-  ['btn-digest','btn-settings'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = show ? '' : 'none';
-  });
-}
-
-function skipSetup() {
-  state.emails = DEMO_EMAILS;
-  switchScreen('inbox');
-  showHeaderBtns(true);
-  renderEmailList();
-}
-
-/* ============================================================
-   SCREEN SWITCHING
-============================================================ */
-function switchScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  const el = document.getElementById('screen-' + name);
-  if (el) el.classList.add('active');
-}
-
-function showInbox()    { switchScreen('inbox'); }
-function showDigest()   { switchScreen('digest'); }
-function showSettings() { switchScreen('settings'); loadSettingsUI(); }
-
-/* ============================================================
-   GMAIL FETCH
-============================================================ */
-async function fetchRealGmailInbox() {
-  const token = state.gmailToken;
-  if (!token) return;
-  const listEl = document.getElementById('email-list-container');
-  listEl.innerHTML = '<div class="placeholder"><span class="spinner"></span>Fetching inbox…</div>';
-
-  try {
-    const res = await fetch(
-      'https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=25&q=category%3Aprimary',
-      { headers: { 'Authorization': 'Bearer ' + token } }
-    );
-    if (!res.ok) {
-      if (res.status === 401) { clearAuth(); showToast('Session expired. Please sign in again.'); return; }
-      listEl.innerHTML = '<div class="placeholder">API error ' + res.status + '</div>';
-      return;
-    }
-    const data = await res.json();
-    if (!data.messages?.length) { listEl.innerHTML = '<div class="placeholder">Inbox is empty.</div>'; return; }
-
-    const details = await Promise.all(
-      data.messages.map(m =>
-        fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/' + m.id + '?format=full',
-          { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json())
-      )
-    );
-    state.emails = details.map(parseGmailMessage);
-    renderEmailList();
-  } catch(e) {
-    console.error(e);
-    listEl.innerHTML = '<div class="placeholder">Network error — check console.</div>';
-  }
-}
-
-function parseGmailMessage(msg) {
-  const headers = msg.payload?.headers || [];
-  const get = n => headers.find(h => h.name.toLowerCase() === n.toLowerCase())?.value || '';
-  const from    = get('from').replace(/<.*>/,'').replace(/"/g,'').trim() || 'Unknown';
-  const subject = get('subject') || '(No Subject)';
-  const dateRaw = get('date');
-  const date    = dateRaw ? new Date(dateRaw).toLocaleDateString([],{month:'short',day:'numeric'}) : '';
-  const isToday = dateRaw ? isEmailToday(new Date(dateRaw)) : false;
-
-  let body = msg.snippet || '';
-  const findPlain = parts => {
-    if (!parts) return null;
-    for (const p of parts) {
-      if (p.mimeType === 'text/plain' && p.body?.data) return p.body.data;
-      if (p.parts) { const f = findPlain(p.parts); if (f) return f; }
-    }
-    return null;
-  };
-  const raw = msg.payload?.body?.data || findPlain(msg.payload?.parts);
-  if (raw) {
-    try { body = decodeURIComponent(escape(atob(raw.replace(/-/g,'+').replace(/_/g,'/')))); }
-    catch { body = msg.snippet || ''; }
-  }
-
-  return {
-    id: msg.id, from, subject, date, body,
-    unread: msg.labelIds?.includes('UNREAD') ?? false,
-    isToday
-  };
-}
-
-function isEmailToday(date) {
-  const now = new Date();
-  return date.getFullYear() === now.getFullYear() &&
-         date.getMonth()    === now.getMonth()    &&
-         date.getDate()     === now.getDate();
-}
-
-function clearAuth() {
-  state.gmailToken = '';
-  localStorage.removeItem('mm_token_' + APP_VERSION);
-  updateAuthBtn(false);
-  showHeaderBtns(false);
-  switchScreen('setup');
-}
-
-/* ============================================================
-   RENDER EMAIL LIST
-============================================================ */
-function isPreferredSender(from) {
-  if (!state.prefs.senders.length) return false;
-  const fl = from.toLowerCase();
-  return state.prefs.senders.some(s => fl.includes(s.toLowerCase()));
-}
-
-function renderEmailList() {
-  const container = document.getElementById('email-list-container');
-  if (!container) return;
-  if (!state.emails.length) { container.innerHTML = '<div class="placeholder">No emails loaded.</div>'; return; }
-
-  // Sort: preferred senders first, then unread, then rest
-  const sorted = [...state.emails].sort((a, b) => {
-    const ap = isPreferredSender(a.from) ? 0 : 1;
-    const bp = isPreferredSender(b.from) ? 0 : 1;
-    if (ap !== bp) return ap - bp;
-    return (b.unread ? 1 : 0) - (a.unread ? 1 : 0);
-  });
-
-  container.innerHTML = '';
-  sorted.forEach(email => {
-    const preferred = isPreferredSender(email.from);
-    const div = document.createElement('div');
-    div.className = 'email-item' + (email.unread ? ' unread' : '') + (preferred ? ' preferred' : '');
-    div.onclick = () => selectEmail(email.id);
-
-    const tags = [
-      preferred ? '<span class="tag tag-preferred">⭐ Priority</span>' : '',
-      email.isToday ? '<span class="tag tag-ai">Today</span>' : '',
-    ].filter(Boolean).join('');
-
-    div.innerHTML = `
-      <div class="email-meta">
-        <span class="email-from">${escHtml(email.from)}</span>
-        <span class="email-date">${escHtml(email.date)}</span>
-      </div>
-      <div class="email-subject">${escHtml(email.subject)}</div>
-      ${tags ? '<div class="email-tags">' + tags + '</div>' : ''}
-    `;
-    container.appendChild(div);
-  });
-}
-
-/* ============================================================
-   SELECT & DISPLAY EMAIL
-============================================================ */
-function selectEmail(id) {
-  const email = state.emails.find(e => e.id === id);
-  if (!email) return;
-  email.unread = false;
-  state.currentId = id;
-  renderEmailList();
-
-  document.getElementById('detail-title').textContent = email.subject;
-  document.getElementById('btn-summarise-one').style.display = '';
-  document.getElementById('email-detail-body').innerHTML = `
-    <div style="margin-bottom:16px;font-size:0.83rem;color:var(--text-muted);">
-      <strong style="color:var(--text)">From:</strong> ${escHtml(email.from)}<br>
-      <strong style="color:var(--text)">Date:</strong> ${escHtml(email.date)}
-    </div>
-    <div style="white-space:pre-wrap;word-break:break-word;line-height:1.75;">${escHtml(email.body)}</div>
-  `;
-}
-
-/* ============================================================
-   GEMINI API CALL
-============================================================ */
-async function callGemini(prompt) {
-  const key = state.prefs.geminiKey;
-  if (!key) {
-    showToast('⚠ Add your free Gemini API key in ⚙ Settings first.');
-    throw new Error('No Gemini key');
-  }
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    }
-  );
-  if (!res.ok) {
-    const err = await res.text();
-    console.error('Gemini error:', err);
-    if (res.status === 400 || res.status === 403) showToast('⚠ Invalid Gemini key — check Settings.');
-    throw new Error('Gemini API error ' + res.status);
-  }
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '(No response)';
-}
-
-/* ============================================================
-   SUMMARISE CURRENT EMAIL (single)
-============================================================ */
-async function summariseCurrentEmail() {
-  const email = state.emails.find(e => e.id === state.currentId);
-  if (!email) return;
-
-  const btn = document.getElementById('btn-summarise-one');
-  btn.disabled = true;
-  btn.textContent = '⏳ Summarising…';
-
-  // Build prefs context
-  const prefCtx = buildPrefContext();
-  const lengthGuide = { brief: '1-2 sentences', standard: '3-4 sentences', detailed: 'a full paragraph with key action points' }[state.prefs.length];
-
-  const prompt = `You are MailMind, an intelligent email assistant.
-${prefCtx}
-
-Summarise the following email in ${lengthGuide}. Be direct and highlight any action required.
-
-From: ${email.from}
-Subject: ${email.subject}
-Body:
-${email.body.slice(0, 3000)}
-
-Summary:`;
-
-  const existingBody = document.getElementById('email-detail-body').innerHTML;
-
-  // Insert AI card placeholder above
-  document.getElementById('email-detail-body').innerHTML =
-    `<div class="ai-card">
-       <div class="ai-card-label">✦ AI Summary <span class="typing"></span></div>
-       <div class="ai-card-text" id="ai-summary-text" style="color:var(--text-muted);">Generating…</div>
-     </div>` + existingBody;
-
-  try {
-    const summary = await callGemini(prompt);
-    document.getElementById('ai-summary-text').textContent = summary;
-    document.querySelector('.typing')?.remove();
-    email.aiSummary = summary;
-  } catch(e) {
-    document.getElementById('ai-summary-text').textContent = 'Could not generate summary.';
-    document.querySelector('.typing')?.remove();
-  }
-
-  btn.disabled = false;
-  btn.textContent = '✦ AI Summary';
-}
-
-/* ============================================================
-   DAILY DIGEST — summarise today's (or all) emails in one go
-============================================================ */
-async function runDailyDigest() {
-  const btn = document.getElementById('btn-summarise');
-  btn.disabled = true;
-  btn.textContent = '⏳ Working…';
-
-  const scope = state.prefs.scope;
-  const toSummarise = scope === 'today'
-    ? state.emails.filter(e => e.isToday || scope === 'all')
-    : state.emails;
-
-  // If Gmail token exists, all emails have isToday set by parse;
-  // For demo emails we set isToday true so they always appear.
-  const eligible = state.emails.filter(e => scope === 'all' || e.isToday || !state.gmailToken);
-
-  switchScreen('digest');
-  document.getElementById('digest-date').textContent =
-    scope === 'today' ? 'Today, ' + new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'}) : 'All loaded emails';
-  const body = document.getElementById('digest-body');
-
-  if (!eligible.length) {
-    body.innerHTML = '<div class="placeholder">No emails to summarise for today. Try changing scope to "All" in Settings.</div>';
-    btn.disabled = false;
-    btn.textContent = '✦ Summarise Today';
-    return;
-  }
-
-  // Show skeleton cards first
-  body.innerHTML = eligible.map(e =>
-    `<div class="digest-card ${isPreferredSender(e.from) ? 'digest-preferred' : ''}">
-       <div class="digest-card-header">
-         <div>
-           <div class="digest-card-from">${escHtml(e.from)}</div>
-           <div class="digest-card-subject">${escHtml(e.subject)}</div>
-         </div>
-         <div class="digest-card-date">${escHtml(e.date)}</div>
-       </div>
-       <div class="digest-card-summary" id="digest-${e.id}"><span class="spinner"></span> Summarising…</div>
-     </div>`
-  ).join('');
-
-  const prefCtx = buildPrefContext();
-  const lengthGuide = { brief:'1-2 sentences', standard:'2-3 sentences', detailed:'a detailed paragraph' }[state.prefs.length];
-
-  // Summarise each email individually so results stream in as they finish
-  await Promise.all(
-    eligible.map(async email => {
-      const prompt = `You are MailMind, an intelligent email assistant.
-${prefCtx}
-
-Summarise the following email in ${lengthGuide}. If it requires action, start with "⚡ ACTION:". Be direct.
-
-From: ${email.from}
-Subject: ${email.subject}
-Body:
-${email.body.slice(0, 2000)}
-
-Summary:`;
-
-      try {
-        const summary = await callGemini(prompt);
-        const el = document.getElementById('digest-' + email.id);
-        if (el) el.innerHTML = escHtml(summary).replace('⚡ ACTION:', '<strong style="color:var(--amber)">⚡ ACTION:</strong>');
-        email.aiSummary = summary;
-      } catch {
-        const el = document.getElementById('digest-' + email.id);
-        if (el) el.textContent = 'Could not summarise this email.';
-      }
-    })
-  );
-
-  btn.disabled = false;
-  btn.textContent = '✦ Summarise Today';
-  showToast('✓ Digest ready');
-}
-
-/* ============================================================
-   PREFERENCE CONTEXT BUILDER (injected into every Gemini prompt)
-============================================================ */
-function buildPrefContext() {
-  const lines = [];
-  if (state.prefs.senders.length) {
-    lines.push(`Priority senders (flag these as important): ${state.prefs.senders.join(', ')}`);
-  }
-  if (state.prefs.categories.length) {
-    lines.push(`Topics to prioritise: ${state.prefs.categories.join(', ')}`);
-  }
-  if (!lines.length) return '';
-  return 'User preferences:\n' + lines.join('\n') + '\n';
-}
-
-/* ============================================================
-   UTILS
-============================================================ */
-function escHtml(s) {
-  return String(s)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
-}
-
-function showToast(msg, ms = 3200) {
-  const t = document.getElementById('toast');
-  if (!t) return;
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), ms);
-}
+// ── UTILS ─────────────────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(m,ms=3200){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),ms);}
 </script>
 </body>
 </html>
