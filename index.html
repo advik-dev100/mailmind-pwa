@@ -346,15 +346,15 @@
         console.error("Initialization runtime failure:", err);
       }
     };
-function handleGmailAuth() {
+
+    function handleGmailAuth() {
       if (state.gmailToken) {
         clearSessionState();
         showToast('Disconnected from Google Account.');
       } else {
-        // Build the base endpoint structure cleanly
         const baseUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
         
-        // Let the browser handle parameter parsing to eliminate malformed 500 errors
+        // URLSearchParams handles property layouts programmatically to block Error 500 failures
         const params = new URLSearchParams({
           client_id: GOOGLE_CLIENT_ID,
           redirect_uri: REDIRECT_URI,
@@ -363,10 +363,10 @@ function handleGmailAuth() {
           prompt: 'consent'
         });
         
-        // Combine them smoothly into a bulletproof URL string
         window.location.href = `${baseUrl}?${params.toString()}`;
       }
-    }    
+    }
+
     function clearSessionState() {
       state.gmailToken = '';
       state.emails = [];
@@ -409,7 +409,7 @@ function handleGmailAuth() {
     }
 
     /* ============================================================
-       GMAIL API CORE PIPELINE FETCH IMPLEMENTATION (SIMPLE GET)
+       GMAIL API FETCH PIPELINE (SECURE AUTHORIZATION HEADERS)
     ============================================================ */
     async function fetchRealGmailInbox() {
       let cleanToken = (state.gmailToken || localStorage.getItem('mm_gmail_token') || '').trim();
@@ -426,10 +426,16 @@ function handleGmailAuth() {
 
       try {
         const queryParam = encodeURIComponent('category:primary');
-        const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=${queryParam}&access_token=${cleanToken}`;
+        const listUrl = `https://gmail.googleapis.com/v1/users/me/messages?maxResults=10&q=${queryParam}`;
         
-        // Zero headers = Simple request pattern that skips browser preflight checks entirely
-        const listResponse = await fetch(listUrl);
+        // Passing the access token inside headers instead of the URL string clears out the 404 block
+        const listResponse = await fetch(listUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${cleanToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
         
         if (!listResponse.ok) {
           console.error(`Google API Error Status: ${listResponse.status}.`);
@@ -438,7 +444,7 @@ function handleGmailAuth() {
             clearSessionState();
             return;
           }
-          listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:#ef5350;">API Connection Failed (${listResponse.status}).<br><small style="color:var(--text-muted);">Ensure permissions are fully consented on login popup.</small></div>`;
+          listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:#ef5350;">API Connection Failed (${listResponse.status}).</div>`;
           return;
         }
 
@@ -451,8 +457,13 @@ function handleGmailAuth() {
         }
 
         const messageDetailsPromises = listData.messages.map(async (msg) => {
-          const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full&access_token=${cleanToken}`;
-          const res = await fetch(detailUrl);
+          const detailUrl = `https://gmail.googleapis.com/v1/users/me/messages/${msg.id}?format=full`;
+          const res = await fetch(detailUrl, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${cleanToken}`
+            }
+          });
           return res.json();
         });
 
