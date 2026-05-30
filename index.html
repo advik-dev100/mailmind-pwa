@@ -237,7 +237,7 @@ const CLIENT_ID   = '437875602906-4mmoiavhj9m3dslh6tvh1pivdqobnk52.apps.googleus
 const REDIRECT    = 'https://advik-dev100.github.io/mailmind-pwa/';
 const GEM_MODEL = 'gemini-1.5-flash';
 const GEM_KEY   = 'AIzaSyDkEW1d5sK3o89URJb-KN-AbXpThGrSSBQ';
-const VER = 'v7';
+const VER = 'v8';
 
 // ── STATE ────────────────────────────────────────────────
 let S = {
@@ -388,12 +388,44 @@ function selEmail(id){
 }
 
 // ── GEMINI CALL ──────────────────────────────────────────
-async function gem(prompt){
-  // key hardcoded
-  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEM_MODEL}:generateContent?key=${GEM_KEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
-  if(!r.ok){const t=await r.text();console.error('Gemini',r.status,t);if(r.status===400||r.status===403)toast('⚠ Invalid Gemini key — check Settings.');throw new Error('gem '+r.status);}
-  const d=await r.json();
-  return d.candidates?.[0]?.content?.parts?.[0]?.text||'(no response)';
+async function gem(prompt, attempt=0){
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEM_MODEL}:generateContent?key=${GEM_KEY}`;
+  let r;
+  try {
+    r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 300, temperature: 0.4 }
+      })
+    });
+  } catch(netErr) {
+    console.error('Gemini network error:', netErr);
+    throw new Error('Network error: ' + netErr.message);
+  }
+  if(!r.ok){
+    const errText = await r.text();
+    console.error('Gemini HTTP', r.status, errText);
+    // Rate limit — wait and retry once
+    if(r.status === 429 && attempt < 2){
+      await new Promise(res => setTimeout(res, 2000 + attempt * 1000));
+      return gem(prompt, attempt + 1);
+    }
+    let msg = 'Gemini error ' + r.status;
+    try { const j = JSON.parse(errText); msg = j.error?.message || msg; } catch{}
+    throw new Error(msg);
+  }
+  const d = await r.json();
+  const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
+  if(!text){
+    console.warn('Gemini empty response:', JSON.stringify(d));
+    // Blocked by safety filter
+    if(d.candidates?.[0]?.finishReason === 'SAFETY') return '(Content filtered by Gemini safety policy)';
+    if(d.promptFeedback?.blockReason) return '(Blocked: ' + d.promptFeedback.blockReason + ')';
+    return '(No summary generated)';
+  }
+  return text.trim();
 }
 
 function prefCtx(){
@@ -414,7 +446,11 @@ async function sumOne(){
   try{
     const txt=await gem(`You are MailMind, an AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action is needed, start with ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2500)}\n\nSummary:`);
     document.getElementById('ait').textContent=txt; e.sum=txt;
-  }catch{document.getElementById('ait').textContent='Could not generate summary.';}
+  }catch(err){
+    const el=document.getElementById('ait');
+    if(el) el.innerHTML='<span style="color:var(--red)">⚠ '+esc(err.message||String(err))+'</span>';
+    console.error('sumOne failed:',err);
+  }
   btn.disabled=false; btn.textContent='✦ AI Summary';
 }
 
@@ -426,14 +462,518 @@ async function runDigest(){
   const dbod=document.getElementById('dbod');
   if(!pool.length){dbod.innerHTML='<div class="ph2">No emails to summarise. Try changing scope to "All" in ⚙ Settings.</div>';return;}
   dbod.innerHTML=pool.map(e=>`<div class="dc${isPref(e.from)?' dp':''}"><div class="dch"><div><div class="dcfrom">${esc(e.from)}</div><div class="dcsubj">${esc(e.subj)}</div></div><div class="dcdate">${esc(e.date)}</div></div><div class="dcs" id="dc_${e.id}"><span class="spin"></span> Summarising…</div></div>`).join('');
-  await Promise.all(pool.map(async e=>{
+  // Sequential to avoid hitting Gemini free-tier rate limit (15 req/min)
+  for(const e of pool){
+    const el=document.getElementById('dc_'+e.id);
     try{
-      const txt=await gem(`You are MailMind, an AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action needed, prefix with ⚡ ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2000)}\n\nSummary:`);
-      const el=document.getElementById('dc_'+e.id);
-      if(el) el.innerHTML=esc(txt).replace('⚡ ACTION REQUIRED','<b style="color:var(--amber)">⚡ ACTION REQUIRED</b>');
+      const txt=await gem(`You are MailMind, an AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action needed, prefix with ACTION REQUIRED. Be direct and concise.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,1500)}\n\nSummary:`);
+      if(el) el.innerHTML=esc(txt).replace('ACTION REQUIRED','<b style="color:var(--amber)">⚡ ACTION REQUIRED</b>');
       e.sum=txt;
-    }catch{const el=document.getElementById('dc_'+e.id);if(el)el.textContent='Could not summarise.';}
-  }));
+    }catch(err){
+      const msg=err.message||String(err);
+      if(el) el.innerHTML='<span style="color:var(--red)">⚠ '+esc(msg)+'</span>';
+      console.error('Failed:',e.subj,err);
+    }
+    // Small delay between calls to respect free tier rate limit
+    await new Promise(res=>setTimeout(res,500));
+  }
+  toast('✓ Digest ready');
+}
+
+// ── DEMO DATA ────────────────────────────────────────────
+const DEMOS=[
+  {id:'d1',from:'Yashika (Coordinator)',subj:'SST Slide Submissions',date:td(),body:'Hey team, submit updated slides on the 1857 Revolt centers tonight so I can merge them. Match the framework layout from yesterday.',unread:true,today:true},
+  {id:'d2',from:'Advik',subj:'PWA Config Update',date:td(),body:'Updated the app build files. Let me know if standalone backgrounds render fine on your test profiles.',unread:false,today:true},
+  {id:'d3',from:'School Admin',subj:'Exam Schedule Released',date:td(),body:'Dear students, the final examination schedule has been uploaded. Please check your admit card status by Friday.',unread:true,today:true},
+  {id:'d4',from:'GitHub',subj:'Deployment succeeded',date:td(),body:'Your latest push to main was deployed successfully to GitHub Pages. No errors detected.',unread:false,today:true},
+];
+function td(){return new Date().toLocaleDateString([],{month:'short',day:'numeric'});}
+
+// ── UTILS ─────────────────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(m,ms=3200){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),ms);}
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MailMind</title>
+<meta name="theme-color" content="#121212">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<style>
+:root{--bg:#121212;--sur:#1e1e1e;--sur2:#252525;--hov:#2d2d2d;--txt:#e0e0e0;--muted:#888;--green:#4caf50;--amber:#ffa726;--blue:#42a5f5;--red:#ef5350;--bdr:#333;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',sans-serif;}
+body{background:var(--bg);color:var(--txt);display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+/* HEADER */
+header{background:var(--sur);padding:12px 20px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-shrink:0;}
+h1{font-size:1.2rem;font-weight:700;color:#fff;}
+.hbtns{display:flex;gap:8px;align-items:center;}
+/* BUTTONS */
+.btn{padding:8px 14px;border-radius:5px;border:none;font-weight:600;font-size:0.83rem;cursor:pointer;transition:opacity .2s;white-space:nowrap;}
+.btn:hover{opacity:.85;} .btn:disabled{opacity:.4;cursor:not-allowed;}
+.bg{background:var(--green);color:#000;}
+.ba{background:var(--amber);color:#000;}
+.bb{background:var(--blue);color:#000;}
+.br{background:var(--red);color:#fff;}
+.bg2{background:transparent;color:var(--muted);border:1px solid var(--bdr);}
+.bg2:hover{background:var(--hov);color:#fff;}
+.sm{padding:6px 11px;font-size:0.78rem;}
+/* SCREENS */
+.wrap{flex:1;display:flex;overflow:hidden;position:relative;}
+.scr{position:absolute;inset:0;display:none;flex-direction:column;}
+.scr.on{display:flex;}
+/* SETUP */
+#s0{justify-content:center;align-items:center;padding:20px;background:linear-gradient(135deg,#121212,#1a261a);}
+.card{background:var(--sur);padding:36px;border-radius:8px;border:1px solid var(--bdr);max-width:440px;width:100%;text-align:center;}
+.card h2{color:#fff;margin-bottom:12px;}
+.card p{color:var(--muted);margin-bottom:22px;font-size:.9rem;line-height:1.6;}
+.col{display:flex;flex-direction:column;gap:10px;}
+/* INBOX */
+#s1{flex-direction:column;}
+.workspace{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:310px;min-width:240px;background:var(--sur);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.ph{padding:11px 14px;border-bottom:1px solid var(--bdr);font-weight:600;font-size:.87rem;background:rgba(255,255,255,.02);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.elist{flex:1;overflow-y:auto;}
+.ei{padding:12px 14px;border-bottom:1px solid var(--bdr);cursor:pointer;transition:background .15s;}
+.ei:hover{background:var(--hov);}
+.ei.unread{border-left:3px solid var(--green);background:rgba(76,175,80,.07);}
+.ei.pref{border-left:3px solid var(--amber);}
+.ei.unread.pref{border-left:3px solid var(--amber);background:rgba(255,167,38,.07);}
+.emeta{display:flex;justify-content:space-between;margin-bottom:3px;font-size:.8rem;}
+.efrom{font-weight:600;color:#fff;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.edate{color:var(--muted);font-size:.75rem;}
+.esubj{font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.etags{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;}
+.tag{font-size:.65rem;padding:1px 7px;border-radius:100px;font-weight:700;letter-spacing:.3px;}
+.tp{background:rgba(255,167,38,.12);color:var(--amber);border:1px solid rgba(255,167,38,.3);}
+.tt{background:rgba(66,165,245,.12);color:var(--blue);border:1px solid rgba(66,165,245,.3);}
+/* DETAIL */
+.detail{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+.detail .ph{background:var(--sur);border-bottom:1px solid var(--bdr);}
+.dbody{flex:1;padding:20px;overflow-y:auto;line-height:1.7;font-size:.91rem;}
+.aicard{background:var(--sur);border:1px solid var(--bdr);border-left:3px solid var(--blue);border-radius:8px;padding:14px 16px;margin-bottom:18px;}
+.ailbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--blue);margin-bottom:8px;}
+.aitxt{font-size:.89rem;color:var(--txt);line-height:1.65;}
+/* DIGEST */
+#s2{flex-direction:column;background:var(--bg);}
+.dh{padding:13px 20px;border-bottom:1px solid var(--bdr);background:var(--sur);display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.dh h2{font-size:1rem;color:#fff;flex:1;}
+.dbod{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;}
+.dc{background:var(--sur);border:1px solid var(--bdr);border-radius:8px;overflow:hidden;}
+.dc.dp{border-left:3px solid var(--amber);}
+.dch{padding:11px 15px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center;}
+.dcfrom{font-weight:600;color:#fff;font-size:.88rem;}
+.dcsubj{font-size:.78rem;color:var(--muted);}
+.dcdate{font-size:.73rem;color:var(--muted);}
+.dcs{padding:13px 15px;font-size:.87rem;line-height:1.65;color:var(--txt);}
+/* SETTINGS */
+#s3{flex-direction:column;background:var(--bg);}
+.sbod{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;max-width:640px;margin:0 auto;width:100%;}
+.sec{background:var(--sur);border:1px solid var(--bdr);border-radius:8px;overflow:hidden;}
+.sectitle{padding:11px 15px;border-bottom:1px solid var(--bdr);font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);background:rgba(255,255,255,.02);}
+.srow{padding:14px 15px;border-bottom:1px solid var(--bdr);}
+.srow:last-child{border-bottom:none;}
+.srow label{display:block;font-size:.87rem;font-weight:600;color:var(--txt);margin-bottom:4px;}
+.srow p{font-size:.78rem;color:var(--muted);line-height:1.5;margin-bottom:9px;}
+/* INPUTS */
+input.inp,select.inp{width:100%;background:var(--sur2);border:1px solid var(--bdr);border-radius:5px;color:var(--txt);font-size:.87rem;padding:9px 12px;outline:none;transition:border-color .15s;}
+input.inp:focus,select.inp:focus{border-color:var(--green);}
+input.inp::placeholder{color:var(--muted);}
+input[type=password].inp{letter-spacing:.1em;}
+.row2{display:flex;gap:8px;margin-top:8px;}
+.row2 input{flex:1;}
+/* TAG PILLS */
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:.79rem;}
+.pill.g{background:rgba(76,175,80,.12);color:var(--green);border:1px solid rgba(76,175,80,.3);}
+.pill.a{background:rgba(255,167,38,.12);color:var(--amber);border:1px solid rgba(255,167,38,.3);}
+.pill .x{cursor:pointer;opacity:.6;font-size:.9rem;line-height:1;}
+.pill .x:hover{opacity:1;}
+.ks{font-size:.76rem;margin-top:5px;}
+.kok{color:var(--green);} .kerr{color:var(--red);}
+/* TOAST */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2e2e2e;color:#fff;padding:10px 22px;border-radius:5px;font-size:.86rem;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.6);white-space:nowrap;}
+#toast.on{opacity:1;}
+/* MISC */
+.ph2{text-align:center;padding:28px 16px;color:var(--muted);font-size:.86rem;}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid var(--bdr);border-top-color:var(--green);border-radius:50%;animation:sp .7s linear infinite;margin-right:5px;vertical-align:middle;}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(max-width:600px){.sidebar{width:100%;border-right:none;border-bottom:1px solid var(--bdr);max-height:44vh;}.workspace{flex-direction:column;}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>✉ MailMind</h1>
+  <div class="hbtns">
+    <button class="btn ba sm" id="hd" onclick="goDigest()" style="display:none">📋 Today's Digest</button>
+    <button class="btn bb sm" id="hs" onclick="goSettings()" style="display:none">⚙ Settings</button>
+    <button class="btn bg sm" id="ha" onclick="doAuth()">Connect Gmail</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- SETUP -->
+<div id="s0" class="scr on">
+  <div class="card">
+    <h2>Welcome to MailMind</h2>
+    <p>Connect Gmail via OAuth 2.0, set your preferences, and get AI-powered daily digests using the free Gemini API.</p>
+    <div class="col">
+      <button class="btn bg" onclick="doAuth()">Sign in with Google</button>
+      <button class="btn bg2" onclick="doDemo()">Try Demo Mode</button>
+    </div>
+  </div>
+</div>
+
+<!-- INBOX -->
+<div id="s1" class="scr">
+  <div class="workspace">
+    <div class="sidebar">
+      <div class="ph">
+        <span>Inbox</span>
+        <button class="btn ba sm" onclick="goDigest()">✦ Summarise Today</button>
+      </div>
+      <div id="elist" class="elist"><div class="ph2">Loading…</div></div>
+    </div>
+    <div class="detail">
+      <div class="ph">
+        <span id="dtitle" style="font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">Select an email</span>
+        <button class="btn bb sm" id="bsum" onclick="sumOne()" style="display:none;margin-left:8px;">✦ AI Summary</button>
+      </div>
+      <div id="dbody" class="dbody">
+        <div class="ph2" style="padding-top:60px;">Select an email from the list.<br><br>Click <b>✦ Summarise Today</b> to get a Gemini AI digest of all today's emails.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DIGEST -->
+<div id="s2" class="scr">
+  <div class="dh">
+    <button class="btn bg2 sm" onclick="go('s1')">← Back</button>
+    <h2>📋 Today's AI Digest</h2>
+    <span id="ddate" style="font-size:.78rem;color:var(--muted);"></span>
+  </div>
+  <div id="dbod" class="dbod"><div class="ph2">Generating…</div></div>
+</div>
+
+<!-- SETTINGS -->
+<div id="s3" class="scr">
+  <div class="dh">
+    <button class="btn bg2 sm" onclick="go('s1')">← Back</button>
+    <h2>⚙ Preferences</h2>
+  </div>
+  <div class="sbod">
+
+        </div>
+
+    <!-- Priority senders -->
+    <div class="sec">
+      <div class="sectitle">⭐ Priority Senders</div>
+      <div class="srow">
+        <label>Preferred email addresses or names</label>
+        <p>Emails from these people will be highlighted in amber and ranked first. Type a name or email and press Add.</p>
+        <div class="pills" id="spills"></div>
+        <div class="row2">
+          <input type="text" class="inp" id="sinp" placeholder="e.g.  yashika@school.com  or  Mom" onkeydown="if(event.key==='Enter')addS()" />
+          <button class="btn ba sm" onclick="addS()">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="sec">
+      <div class="sectitle">📂 Preferred Topics / Categories</div>
+      <div class="srow">
+        <label>Topics Gemini should prioritise</label>
+        <p>Summaries will highlight content matching these. Type a topic and press Add.</p>
+        <div class="pills" id="cpills"></div>
+        <div class="row2">
+          <input type="text" class="inp" id="cinp" placeholder="e.g.  invoices   school   deadlines   project" onkeydown="if(event.key==='Enter')addC()" />
+          <button class="btn bg sm" onclick="addC()">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary style -->
+    <div class="sec">
+      <div class="sectitle">📝 Summary Style</div>
+      <div class="srow">
+        <label>Summary length</label>
+        <select class="inp" id="plen" onchange="saveP()">
+          <option value="brief">Brief — 1 to 2 sentences</option>
+          <option value="standard" selected>Standard — 3 to 4 sentences</option>
+          <option value="detailed">Detailed — full breakdown with action points</option>
+        </select>
+      </div>
+      <div class="srow">
+        <label>Digest covers</label>
+        <select class="inp" id="pscope" onchange="saveP()">
+          <option value="today" selected>Today's emails only</option>
+          <option value="all">All loaded emails</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn bg" style="width:100%;padding:12px;" onclick="go('s1')">✓ Save &amp; Go to Inbox</button>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+<div id="toast"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────
+const CLIENT_ID   = '437875602906-4mmoiavhj9m3dslh6tvh1pivdqobnk52.apps.googleusercontent.com';
+const REDIRECT    = 'https://advik-dev100.github.io/mailmind-pwa/';
+const GEM_MODEL = 'gemini-1.5-flash';
+const GEM_KEY   = 'AIzaSyDkEW1d5sK3o89URJb-KN-AbXpThGrSSBQ';
+const VER = 'v8';
+
+// ── STATE ────────────────────────────────────────────────
+let S = {
+  token : '',
+  emails: [],
+  curId : null,
+  p: { senders:[], cats:[], len:'standard', scope:'today' }
+};
+
+// ── PREFS ────────────────────────────────────────────────
+function lp(){ try{ const d=JSON.parse(localStorage.getItem('mm_p_'+VER)||'{}'); S.p={...S.p,...d}; }catch{} }
+function sp(){ localStorage.setItem('mm_p_'+VER,JSON.stringify(S.p)); }
+function saveP(){ S.p.len=document.getElementById('plen').value; S.p.scope=document.getElementById('pscope').value; sp(); }
+
+
+
+function addS(){
+  const i=document.getElementById('sinp'); const v=i.value.trim();
+  if(!v)return;
+  if(!S.p.senders.includes(v)){S.p.senders.push(v);sp();renderS();}
+  i.value='';
+}
+function remS(v){S.p.senders=S.p.senders.filter(x=>x!==v);sp();renderS();renderList();}
+function renderS(){
+  const el=document.getElementById('spills');
+  if(!el)return;
+  el.innerHTML=S.p.senders.map(s=>`<span class="pill a">${esc(s)}<span class="x" onclick="remS('${esc(s)}')">✕</span></span>`).join('');
+}
+
+function addC(){
+  const i=document.getElementById('cinp'); const v=i.value.trim();
+  if(!v)return;
+  if(!S.p.cats.includes(v)){S.p.cats.push(v);sp();renderC();}
+  i.value='';
+}
+function remC(v){S.p.cats=S.p.cats.filter(x=>x!==v);sp();renderC();}
+function renderC(){
+  const el=document.getElementById('cpills');
+  if(!el)return;
+  el.innerHTML=S.p.cats.map(c=>`<span class="pill g">${esc(c)}<span class="x" onclick="remC('${esc(c)}')">✕</span></span>`).join('');
+}
+
+function loadSettingsUI(){
+  const pl=document.getElementById('plen'); if(pl) pl.value=S.p.len;
+  const ps=document.getElementById('pscope'); if(ps) ps.value=S.p.scope;
+  renderS(); renderC();
+}
+
+// ── SW CLEANUP ───────────────────────────────────────────
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));
+  caches.keys().then(k=>k.forEach(x=>caches.delete(x)));
+}
+
+// ── INIT ─────────────────────────────────────────────────
+lp();
+window.onload=function(){
+  try{
+    const f=new URLSearchParams(window.location.hash.substring(1));
+    const t=f.get('access_token');
+    if(t){ S.token=t.trim(); localStorage.setItem('mm_t_'+VER,S.token); window.history.replaceState({},'',location.pathname); signedIn(); return; }
+    const sv=localStorage.getItem('mm_t_'+VER);
+    if(sv&&sv.length>10){ S.token=sv; signedIn(); }
+  }catch(e){console.error(e);}
+};
+
+function signedIn(){ setBtn(true); hshow(true); go('s1'); fetchMail(); }
+
+// ── AUTH ─────────────────────────────────────────────────
+function doAuth(){
+  if(S.token){ S.token=''; localStorage.removeItem('mm_t_'+VER); S.emails=[]; setBtn(false); hshow(false); go('s0'); toast('Disconnected.'); return; }
+  const p=new URLSearchParams({client_id:CLIENT_ID,redirect_uri:REDIRECT,response_type:'token',scope:'https://www.googleapis.com/auth/gmail.readonly',prompt:'consent'});
+  location.href='https://accounts.google.com/o/oauth2/v2/auth?'+p;
+}
+function setBtn(in_){
+  const b=document.getElementById('ha');
+  b.textContent=in_?'Disconnect':'Connect Gmail';
+  b.className=in_?'btn br sm':'btn bg sm';
+}
+function hshow(v){ ['hd','hs'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display=v?'':'none';}); }
+function doDemo(){ S.emails=DEMOS; go('s1'); hshow(true); renderList(); }
+
+// ── SCREENS ──────────────────────────────────────────────
+function go(id){ document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on')); document.getElementById(id).classList.add('on'); }
+function goSettings(){ go('s3'); loadSettingsUI(); }
+function goDigest(){ go('s2'); runDigest(); }
+
+// ── GMAIL FETCH ──────────────────────────────────────────
+async function fetchMail(){
+  if(!S.token)return;
+  document.getElementById('elist').innerHTML='<div class="ph2"><span class="spin"></span>Fetching inbox…</div>';
+  try{
+    const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=25&q=category%3Aprimary',{headers:{'Authorization':'Bearer '+S.token}});
+    if(!r.ok){ if(r.status===401){logout();toast('Session expired, sign in again.');}else{document.getElementById('elist').innerHTML='<div class="ph2">API error '+r.status+'</div>';} return; }
+    const d=await r.json();
+    if(!d.messages?.length){document.getElementById('elist').innerHTML='<div class="ph2">Inbox empty.</div>';return;}
+    const msgs=await Promise.all(d.messages.map(m=>fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+m.id+'?format=full',{headers:{'Authorization':'Bearer '+S.token}}).then(x=>x.json())));
+    S.emails=msgs.map(parse);
+    renderList();
+  }catch(e){console.error(e);document.getElementById('elist').innerHTML='<div class="ph2">Network error.</div>';}
+}
+
+function parse(msg){
+  const H=msg.payload?.headers||[];
+  const g=n=>H.find(h=>h.name.toLowerCase()===n.toLowerCase())?.value||'';
+  const from=g('from').replace(/<.*>/,'').replace(/"/g,'').trim()||'Unknown';
+  const subj=g('subject')||'(No Subject)';
+  const dr=g('date'); const date=dr?new Date(dr).toLocaleDateString([],{month:'short',day:'numeric'}):'';
+  const today=dr?isToday(new Date(dr)):false;
+  let body=msg.snippet||'';
+  const fp=parts=>{if(!parts)return null;for(const p of parts){if(p.mimeType==='text/plain'&&p.body?.data)return p.body.data;if(p.parts){const f=fp(p.parts);if(f)return f;}}return null;};
+  const raw=msg.payload?.body?.data||fp(msg.payload?.parts);
+  if(raw){try{body=decodeURIComponent(escape(atob(raw.replace(/-/g,'+').replace(/_/g,'/'))));}catch{}}
+  return{id:msg.id,from,subj,date,body,unread:msg.labelIds?.includes('UNREAD')??false,today};
+}
+
+function isToday(d){const n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();}
+function isPref(from){return S.p.senders.some(s=>from.toLowerCase().includes(s.toLowerCase()));}
+function logout(){S.token='';localStorage.removeItem('mm_t_'+VER);setBtn(false);hshow(false);go('s0');}
+
+// ── RENDER LIST ──────────────────────────────────────────
+function renderList(){
+  const el=document.getElementById('elist');
+  if(!S.emails.length){el.innerHTML='<div class="ph2">No emails.</div>';return;}
+  const sorted=[...S.emails].sort((a,b)=>{const ap=isPref(a.from)?0:1,bp=isPref(b.from)?0:1;if(ap!==bp)return ap-bp;return (b.unread?1:0)-(a.unread?1:0);});
+  el.innerHTML='';
+  sorted.forEach(e=>{
+    const pref=isPref(e.from);
+    const d=document.createElement('div');
+    d.className='ei'+(e.unread?' unread':'')+(pref?' pref':'');
+    d.onclick=()=>selEmail(e.id);
+    d.innerHTML=`<div class="emeta"><span class="efrom">${esc(e.from)}</span><span class="edate">${esc(e.date)}</span></div>
+<div class="esubj">${esc(e.subj)}</div>
+<div class="etags">${pref?'<span class="tag tp">⭐ Priority</span>':''}${e.today?'<span class="tag tt">Today</span>':''}</div>`;
+    el.appendChild(d);
+  });
+}
+
+// ── SELECT EMAIL ─────────────────────────────────────────
+function selEmail(id){
+  const e=S.emails.find(x=>x.id===id); if(!e)return;
+  e.unread=false; S.curId=id; renderList();
+  document.getElementById('dtitle').textContent=e.subj;
+  document.getElementById('bsum').style.display='';
+  document.getElementById('dbody').innerHTML=`
+<div style="margin-bottom:15px;font-size:.82rem;color:var(--muted)"><b style="color:var(--txt)">From:</b> ${esc(e.from)}<br><b style="color:var(--txt)">Date:</b> ${esc(e.date)}</div>
+<div style="white-space:pre-wrap;word-break:break-word;line-height:1.75">${esc(e.body)}</div>`;
+}
+
+// ── GEMINI CALL ──────────────────────────────────────────
+async function gem(prompt, attempt=0){
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEM_MODEL}:generateContent?key=${GEM_KEY}`;
+  let r;
+  try {
+    r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 300, temperature: 0.4 }
+      })
+    });
+  } catch(netErr) {
+    console.error('Gemini network error:', netErr);
+    throw new Error('Network error: ' + netErr.message);
+  }
+  if(!r.ok){
+    const errText = await r.text();
+    console.error('Gemini HTTP', r.status, errText);
+    // Rate limit — wait and retry once
+    if(r.status === 429 && attempt < 2){
+      await new Promise(res => setTimeout(res, 2000 + attempt * 1000));
+      return gem(prompt, attempt + 1);
+    }
+    let msg = 'Gemini error ' + r.status;
+    try { const j = JSON.parse(errText); msg = j.error?.message || msg; } catch{}
+    throw new Error(msg);
+  }
+  const d = await r.json();
+  const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
+  if(!text){
+    console.warn('Gemini empty response:', JSON.stringify(d));
+    // Blocked by safety filter
+    if(d.candidates?.[0]?.finishReason === 'SAFETY') return '(Content filtered by Gemini safety policy)';
+    if(d.promptFeedback?.blockReason) return '(Blocked: ' + d.promptFeedback.blockReason + ')';
+    return '(No summary generated)';
+  }
+  return text.trim();
+}
+
+function prefCtx(){
+  const lines=[];
+  if(S.p.senders.length) lines.push('Priority senders (flag as important): '+S.p.senders.join(', '));
+  if(S.p.cats.length)    lines.push('Preferred topics to highlight: '+S.p.cats.join(', '));
+  return lines.length?'User preferences:\n'+lines.join('\n')+'\n':'';
+}
+
+const LENS={brief:'1-2 sentences',standard:'2-3 sentences',detailed:'a detailed paragraph with action points'};
+
+// ── SUMMARISE ONE EMAIL ──────────────────────────────────
+async function sumOne(){
+  const e=S.emails.find(x=>x.id===S.curId); if(!e)return;
+  const btn=document.getElementById('bsum'); btn.disabled=true; btn.textContent='⏳…';
+  const old=document.getElementById('dbody').innerHTML;
+  document.getElementById('dbody').innerHTML=`<div class="aicard"><div class="ailbl">✦ AI Summary</div><div class="aitxt" id="ait" style="color:var(--muted)"><span class="spin"></span> Generating…</div></div>`+old;
+  try{
+    const txt=await gem(`You are MailMind, an AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action is needed, start with ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2500)}\n\nSummary:`);
+    document.getElementById('ait').textContent=txt; e.sum=txt;
+  }catch(err){
+    const el=document.getElementById('ait');
+    if(el) el.innerHTML='<span style="color:var(--red)">⚠ '+esc(err.message||String(err))+'</span>';
+    console.error('sumOne failed:',err);
+  }
+  btn.disabled=false; btn.textContent='✦ AI Summary';
+}
+
+// ── DAILY DIGEST ─────────────────────────────────────────
+async function runDigest(){
+  const btn=document.querySelector('#s1 .ba');
+  document.getElementById('ddate').textContent=S.p.scope==='today'?'Today, '+new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'}):'All loaded emails';
+  const pool=S.p.scope==='today'?S.emails.filter(e=>e.today||!S.token):S.emails;
+  const dbod=document.getElementById('dbod');
+  if(!pool.length){dbod.innerHTML='<div class="ph2">No emails to summarise. Try changing scope to "All" in ⚙ Settings.</div>';return;}
+  dbod.innerHTML=pool.map(e=>`<div class="dc${isPref(e.from)?' dp':''}"><div class="dch"><div><div class="dcfrom">${esc(e.from)}</div><div class="dcsubj">${esc(e.subj)}</div></div><div class="dcdate">${esc(e.date)}</div></div><div class="dcs" id="dc_${e.id}"><span class="spin"></span> Summarising…</div></div>`).join('');
+  // Sequential to avoid hitting Gemini free-tier rate limit (15 req/min)
+  for(const e of pool){
+    const el=document.getElementById('dc_'+e.id);
+    try{
+      const txt=await gem(`You are MailMind, an AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action needed, prefix with ACTION REQUIRED. Be direct and concise.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,1500)}\n\nSummary:`);
+      if(el) el.innerHTML=esc(txt).replace('ACTION REQUIRED','<b style="color:var(--amber)">⚡ ACTION REQUIRED</b>');
+      e.sum=txt;
+    }catch(err){
+      const msg=err.message||String(err);
+      if(el) el.innerHTML='<span style="color:var(--red)">⚠ '+esc(msg)+'</span>';
+      console.error('Failed:',e.subj,err);
+    }
+    // Small delay between calls to respect free tier rate limit
+    await new Promise(res=>setTimeout(res,500));
+  }
   toast('✓ Digest ready');
 }
 
