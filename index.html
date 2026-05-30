@@ -76,92 +76,26 @@ h1{font-size:1.2rem;font-weight:700;color:#fff;}
 .dcs{padding:13px 15px;font-size:.87rem;line-height:1.65;color:var(--txt);}
 /* SETTINGS */
 #s3{flex-direction:column;background:var(--bg);}
-.sbod{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;max-width:720px;margin:0 auto;width:100%;}
-
-/* FIXED LONG INPUTS & CONTAINER OVERHAUL */
-.sec {
-  background: var(--sur);
-  border: 1px solid var(--bdr);
-  border-radius: 8px;
-  overflow: hidden;
-  height: auto !important;
-  padding-bottom: 5px;
-}
+.sbod{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;max-width:640px;margin:0 auto;width:100%;}
+.sec{background:var(--sur);border:1px solid var(--bdr);border-radius:8px;overflow:hidden;}
 .sectitle{padding:11px 15px;border-bottom:1px solid var(--bdr);font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);background:rgba(255,255,255,.02);}
-.srow {
-  padding: 16px 15px !important;
-  border-bottom: 1px solid var(--bdr);
-  height: auto !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
+.srow{padding:14px 15px;border-bottom:1px solid var(--bdr);}
 .srow:last-child{border-bottom:none;}
-.srow label {display:block;font-size:.87rem;font-weight:600;color:var(--txt);margin-bottom:4px;}
-.srow p {font-size:.78rem;color:var(--muted);line-height:1.5;margin-bottom:9px;}
-
-.row2 {
-  display: flex !important;
-  flex-direction: row !important;
-  gap: 12px !important;
-  margin-top: 8px !important;
-  width: 100% !important;
-  height: auto !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-}
-input.inp {
-  width: 500px !important; /* Forces the box to be explicitly long */
-  flex: none !important; /* Disables flex resizing quirks */
-  display: block !important;
-  background: #252525 !important;
-  border: 1px solid #444 !important;
-  border-radius: 6px !important;
-  color: #fff !important;
-  font-size: 0.87rem !important;
-  padding: 10px 14px !important;
-  box-sizing: border-box !important;
-  height: 42px !important;
-  min-height: 42px !important;
-  outline: none !important;
-  transition: border-color .15s;
-}
-select.inp {
-  width: 500px !important; /* Matches text box width exactly */
-  flex: none !important;
-  background: var(--sur2) !important;
-  border: 1px solid var(--bdr) !important;
-  border-radius: 5px !important;
-  color: var(--txt) !important;
-  font-size: .87rem !important;
-  padding: 10px 12px !important;
-  height: 42px !important;
-  outline: none !important;
-}
-input.inp:focus, select.inp:focus {
-  border-color: var(--green) !important;
-}
-input.inp::placeholder {
-  color: var(--muted) !important;
-}
-input[type=password].inp {
-  letter-spacing: .1em !important;
-}
-.row2 .btn {
-  height: 42px !important;
-  padding: 0 22px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 0.85rem !important;
-  flex-shrink: 0 !important;
-}
-
+.srow label{display:block;font-size:.87rem;font-weight:600;color:var(--txt);margin-bottom:4px;}
+.srow p{font-size:.78rem;color:var(--muted);line-height:1.5;margin-bottom:9px;}
+/* INPUTS */
+input.inp,select.inp{width:100%;background:var(--sur2);border:1px solid var(--bdr);border-radius:5px;color:var(--txt);font-size:.87rem;padding:9px 12px;outline:none;transition:border-color .15s;}
+input.inp:focus,select.inp:focus{border-color:var(--green);}
+input.inp::placeholder{color:var(--muted);}
+input[type=password].inp{letter-spacing:.1em;}
+.row2{display:flex;gap:8px;margin-top:8px;}
+.row2 input{flex:1;}
 /* TAG PILLS */
 .pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
-.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:100px;font-size:.79rem;font-weight:500;}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:.79rem;}
 .pill.g{background:rgba(76,175,80,.12);color:var(--green);border:1px solid rgba(76,175,80,.3);}
 .pill.a{background:rgba(255,167,38,.12);color:var(--amber);border:1px solid rgba(255,167,38,.3);}
-.pill .x{cursor:pointer;opacity:.6;font-size:.9rem;line-height:1;margin-left:2px;}
+.pill .x{cursor:pointer;opacity:.6;font-size:.9rem;line-height:1;}
 .pill .x:hover{opacity:1;}
 .ks{font-size:.76rem;margin-top:5px;}
 .kok{color:var(--green);} .kerr{color:var(--red);}
@@ -188,10 +122,11 @@ input[type=password].inp {
 
 <div class="wrap">
 
+<!-- SETUP -->
 <div id="s0" class="scr on">
   <div class="card">
     <h2>Welcome to MailMind</h2>
-    <p>Connect Gmail via OAuth 2.0, set your preferences, and get core AI-powered daily digests using a secure back-end cloud engine.</p>
+    <p>Connect Gmail via OAuth 2.0, set your preferences, and get AI-powered daily digests using the free Gemini API.</p>
     <div class="col">
       <button class="btn bg" onclick="doAuth()">Sign in with Google</button>
       <button class="btn bg2" onclick="doDemo()">Try Demo Mode</button>
@@ -199,6 +134,7 @@ input[type=password].inp {
   </div>
 </div>
 
+<!-- INBOX -->
 <div id="s1" class="scr">
   <div class="workspace">
     <div class="sidebar">
@@ -214,12 +150,13 @@ input[type=password].inp {
         <button class="btn bb sm" id="bsum" onclick="sumOne()" style="display:none;margin-left:8px;">✦ AI Summary</button>
       </div>
       <div id="dbody" class="dbody">
-        <div class="ph2" style="padding-top:60px;">Select an email from the list.<br><br>Click <b>✦ Summarise Today</b> to get a smart AI digest of all today's emails.</div>
+        <div class="ph2" style="padding-top:60px;">Select an email from the list.<br><br>Click <b>✦ Summarise Today</b> to get a Gemini AI digest of all today's emails.</div>
       </div>
     </div>
   </div>
 </div>
 
+<!-- DIGEST -->
 <div id="s2" class="scr">
   <div class="dh">
     <button class="btn bg2 sm" onclick="go('s1')">← Back</button>
@@ -229,6 +166,7 @@ input[type=password].inp {
   <div id="dbod" class="dbod"><div class="ph2">Generating…</div></div>
 </div>
 
+<!-- SETTINGS -->
 <div id="s3" class="scr">
   <div class="dh">
     <button class="btn bg2 sm" onclick="go('s1')">← Back</button>
@@ -236,19 +174,9 @@ input[type=password].inp {
   </div>
   <div class="sbod">
 
-    <div class="sec">
-      <div class="sectitle">🤖 MailMind Processor Core Key</div>
-      <div class="srow">
-        <label>API Processing Key</label>
-        <p>Get a processing key from your AI workspace studio configuration settings panel.</p>
-        <div class="row2">
-          <input type="password" class="inp" id="gkey" placeholder="Paste your core access key here  e.g. AIzaSy…" />
-          <button class="btn bg sm" onclick="saveKey()">Save</button>
         </div>
-        <div id="kstat" class="ks"></div>
-      </div>
-    </div>
 
+    <!-- Priority senders -->
     <div class="sec">
       <div class="sectitle">⭐ Priority Senders</div>
       <div class="srow">
@@ -262,10 +190,11 @@ input[type=password].inp {
       </div>
     </div>
 
+    <!-- Categories -->
     <div class="sec">
       <div class="sectitle">📂 Preferred Topics / Categories</div>
       <div class="srow">
-        <label>Topics the AI should prioritise</label>
+        <label>Topics Gemini should prioritise</label>
         <p>Summaries will highlight content matching these. Type a topic and press Add.</p>
         <div class="pills" id="cpills"></div>
         <div class="row2">
@@ -275,26 +204,23 @@ input[type=password].inp {
       </div>
     </div>
 
+    <!-- Summary style -->
     <div class="sec">
       <div class="sectitle">📝 Summary Style</div>
       <div class="srow">
         <label>Summary length</label>
-        <div class="row2">
-          <select class="inp" id="plen" onchange="saveP()">
-            <option value="brief">Brief — 1 to 2 sentences</option>
-            <option value="standard" selected>Standard — 3 to 4 sentences</option>
-            <option value="detailed">Detailed — full breakdown with action points</option>
-          </select>
-        </div>
+        <select class="inp" id="plen" onchange="saveP()">
+          <option value="brief">Brief — 1 to 2 sentences</option>
+          <option value="standard" selected>Standard — 3 to 4 sentences</option>
+          <option value="detailed">Detailed — full breakdown with action points</option>
+        </select>
       </div>
       <div class="srow">
         <label>Digest covers</label>
-        <div class="row2">
-          <select class="inp" id="pscope" onchange="saveP()">
-            <option value="today" selected>Today's emails only</option>
-            <option value="all">All loaded emails</option>
-          </select>
-        </div>
+        <select class="inp" id="pscope" onchange="saveP()">
+          <option value="today" selected>Today's emails only</option>
+          <option value="all">All loaded emails</option>
+        </select>
       </div>
     </div>
 
@@ -302,21 +228,23 @@ input[type=password].inp {
   </div>
 </div>
 
-</div><div id="toast"></div>
+</div><!-- /wrap -->
+<div id="toast"></div>
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────
 const CLIENT_ID   = '437875602906-4mmoiavhj9m3dslh6tvh1pivdqobnk52.apps.googleusercontent.com';
 const REDIRECT    = 'https://advik-dev100.github.io/mailmind-pwa/';
-const CORE_MDL    = 'gemini-1.5-flash';
-const VER         = 'v6';
+const GEM_MODEL = 'gemini-1.5-flash';
+const GEM_KEY   = 'AIzaSyDkEW1d5sK3o89URJb-KN-AbXpThGrSSBQ';
+const VER = 'v7';
 
 // ── STATE ────────────────────────────────────────────────
 let S = {
   token : '',
   emails: [],
   curId : null,
-  p: { key:'', senders:[], cats:[], len:'standard', scope:'today' }
+  p: { senders:[], cats:[], len:'standard', scope:'today' }
 };
 
 // ── PREFS ────────────────────────────────────────────────
@@ -324,18 +252,12 @@ function lp(){ try{ const d=JSON.parse(localStorage.getItem('mm_p_'+VER)||'{}');
 function sp(){ localStorage.setItem('mm_p_'+VER,JSON.stringify(S.p)); }
 function saveP(){ S.p.len=document.getElementById('plen').value; S.p.scope=document.getElementById('pscope').value; sp(); }
 
-function saveKey(){
-  const v=document.getElementById('gkey').value.trim();
-  if(!v){toast('Paste your access key first.');return;}
-  S.p.key=v; sp();
-  document.getElementById('kstat').innerHTML='<span class="kok">✓ Key saved</span>';
-  toast('✓ Core processing key saved');
-}
+
 
 function addS(){
   const i=document.getElementById('sinp'); const v=i.value.trim();
   if(!v)return;
-  if(!S.p.senders.includes(v)){S.p.senders.push(v);sp();renderS();renderList();}
+  if(!S.p.senders.includes(v)){S.p.senders.push(v);sp();renderS();}
   i.value='';
 }
 function remS(v){S.p.senders=S.p.senders.filter(x=>x!==v);sp();renderS();renderList();}
@@ -359,8 +281,6 @@ function renderC(){
 }
 
 function loadSettingsUI(){
-  const ki=document.getElementById('gkey'); if(ki) ki.value=S.p.key||'';
-  if(S.p.key) document.getElementById('kstat').innerHTML='<span class="kok">✓ Key saved</span>';
   const pl=document.getElementById('plen'); if(pl) pl.value=S.p.len;
   const ps=document.getElementById('pscope'); if(ps) ps.value=S.p.scope;
   renderS(); renderC();
@@ -434,7 +354,6 @@ function parse(msg){
   return{id:msg.id,from,subj,date,body,unread:msg.labelIds?.includes('UNREAD')??false,today};
 }
 
-// ── UTILS & HELPERS ──────────────────────────────────────
 function isToday(d){const n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();}
 function isPref(from){return S.p.senders.some(s=>from.toLowerCase().includes(s.toLowerCase()));}
 function logout(){S.token='';localStorage.removeItem('mm_t_'+VER);setBtn(false);hshow(false);go('s0');}
@@ -468,11 +387,11 @@ function selEmail(id){
 <div style="white-space:pre-wrap;word-break:break-word;line-height:1.75">${esc(e.body)}</div>`;
 }
 
-// ── CORE BACKEND CALL ────────────────────────────────────
-async function callCoreEngine(prompt){
-  if(!S.p.key){toast('⚠ Add your core access key in ⚙ Settings first.');throw new Error('no key');}
-  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CORE_MDL}:generateContent?key=${S.p.key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
-  if(!r.ok){const t=await r.text();console.error('Core Engine Error',r.status,t);if(r.status===400||r.status===403)toast('⚠ Invalid processing key — check Settings.');throw new Error('core '+r.status);}
+// ── GEMINI CALL ──────────────────────────────────────────
+async function gem(prompt){
+  // key hardcoded
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEM_MODEL}:generateContent?key=${GEM_KEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+  if(!r.ok){const t=await r.text();console.error('Gemini',r.status,t);if(r.status===400||r.status===403)toast('⚠ Invalid Gemini key — check Settings.');throw new Error('gem '+r.status);}
   const d=await r.json();
   return d.candidates?.[0]?.content?.parts?.[0]?.text||'(no response)';
 }
@@ -493,7 +412,7 @@ async function sumOne(){
   const old=document.getElementById('dbody').innerHTML;
   document.getElementById('dbody').innerHTML=`<div class="aicard"><div class="ailbl">✦ AI Summary</div><div class="aitxt" id="ait" style="color:var(--muted)"><span class="spin"></span> Generating…</div></div>`+old;
   try{
-    const txt=await callCoreEngine(`You are MailMind, a smart customized AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action is needed, start with ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2500)}\n\nSummary:`);
+    const txt=await gem(`You are MailMind, an AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action is needed, start with ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2500)}\n\nSummary:`);
     document.getElementById('ait').textContent=txt; e.sum=txt;
   }catch{document.getElementById('ait').textContent='Could not generate summary.';}
   btn.disabled=false; btn.textContent='✦ AI Summary';
@@ -509,7 +428,7 @@ async function runDigest(){
   dbod.innerHTML=pool.map(e=>`<div class="dc${isPref(e.from)?' dp':''}"><div class="dch"><div><div class="dcfrom">${esc(e.from)}</div><div class="dcsubj">${esc(e.subj)}</div></div><div class="dcdate">${esc(e.date)}</div></div><div class="dcs" id="dc_${e.id}"><span class="spin"></span> Summarising…</div></div>`).join('');
   await Promise.all(pool.map(async e=>{
     try{
-      const txt=await callCoreEngine(`You are MailMind, a smart customized AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action needed, prefix with ⚡ ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2000)}\n\nSummary:`);
+      const txt=await gem(`You are MailMind, an AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action needed, prefix with ⚡ ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2000)}\n\nSummary:`);
       const el=document.getElementById('dc_'+e.id);
       if(el) el.innerHTML=esc(txt).replace('⚡ ACTION REQUIRED','<b style="color:var(--amber)">⚡ ACTION REQUIRED</b>');
       e.sum=txt;
@@ -527,7 +446,7 @@ const DEMOS=[
 ];
 function td(){return new Date().toLocaleDateString([],{month:'short',day:'numeric'});}
 
-// ── GENERAL UTILS ────────────────────────────────────────
+// ── UTILS ─────────────────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function toast(m,ms=3200){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),ms);}
 </script>
