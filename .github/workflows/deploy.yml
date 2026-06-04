@@ -1,4 +1,4 @@
-name: Deploy MailMind
+name: Inject Key and Deploy
 
 on:
   push:
@@ -7,15 +7,20 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Inject Gemini key
+      - name: Inject Gemini API key
         run: |
           sed -i "s|GEMINI_KEY_PLACEHOLDER|${{ secrets.GEMINI_KEY }}|g" index.html
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
+      - name: Commit injected file to main
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add index.html
+          git diff --staged --quiet || git commit -m "ci: inject gemini key [skip ci]"
+          git push
