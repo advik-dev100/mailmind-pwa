@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MailMind</title>
 <meta name="theme-color" content="#121212">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <style>
@@ -16,11 +16,9 @@ header{background:var(--sur);padding:12px 20px;border-bottom:1px solid var(--bdr
 h1{font-size:1.2rem;font-weight:700;color:#fff;}
 .hbtns{display:flex;gap:8px;align-items:center;}
 .btn{padding:8px 14px;border-radius:5px;border:none;font-weight:600;font-size:0.83rem;cursor:pointer;transition:opacity .2s;white-space:nowrap;}
-.btn:hover{opacity:.85;} .btn:disabled{opacity:.4;cursor:not-allowed;}
-.bg{background:var(--green);color:#000;}
-.ba{background:var(--amber);color:#000;}
-.bb{background:var(--blue);color:#000;}
-.br{background:var(--red);color:#fff;}
+.btn:hover{opacity:.85;}.btn:disabled{opacity:.4;cursor:not-allowed;}
+.bg{background:var(--green);color:#000;}.ba{background:var(--amber);color:#000;}
+.bb{background:var(--blue);color:#000;}.br{background:var(--red);color:#fff;}
 .bg2{background:transparent;color:var(--muted);border:1px solid var(--bdr);}
 .bg2:hover{background:var(--hov);color:#fff;}
 .sm{padding:6px 11px;font-size:0.78rem;}
@@ -95,7 +93,6 @@ input.inp::placeholder{color:var(--muted);}
 </style>
 </head>
 <body>
-
 <header>
   <h1>✉ MailMind</h1>
   <div class="hbtns">
@@ -104,20 +101,17 @@ input.inp::placeholder{color:var(--muted);}
     <button class="btn bg sm" id="ha" onclick="doAuth()">Connect Gmail</button>
   </div>
 </header>
-
 <div class="wrap">
-
 <div id="s0" class="scr on">
   <div class="card">
     <h2>Welcome to MailMind</h2>
-    <p>Connect Gmail via OAuth 2.0, set your preferences, and get AI-powered daily digests using the free Gemini API.</p>
+    <p>Connect Gmail via OAuth 2.0, set your preferences, and get AI-powered daily digests using Gemini.</p>
     <div class="col">
       <button class="btn bg" onclick="doAuth()">Sign in with Google</button>
       <button class="btn bg2" onclick="doDemo()">Try Demo Mode</button>
     </div>
   </div>
 </div>
-
 <div id="s1" class="scr">
   <div class="workspace">
     <div class="sidebar">
@@ -133,12 +127,11 @@ input.inp::placeholder{color:var(--muted);}
         <button class="btn bb sm" id="bsum" onclick="sumOne()" style="display:none;margin-left:8px;">✦ AI Summary</button>
       </div>
       <div id="dbody" class="dbody">
-        <div class="ph2" style="padding-top:60px;">Select an email from the list.<br><br>Click <b>✦ Summarise Today</b> to get a Gemini AI digest of all today's emails.</div>
+        <div class="ph2" style="padding-top:60px;">Select an email from the list.<br><br>Click <b>✦ Summarise Today</b> for a Gemini AI digest of today's emails.</div>
       </div>
     </div>
   </div>
 </div>
-
 <div id="s2" class="scr">
   <div class="dh">
     <button class="btn bg2 sm" onclick="go('s1')">← Back</button>
@@ -147,40 +140,36 @@ input.inp::placeholder{color:var(--muted);}
   </div>
   <div id="dbod" class="dbod"><div class="ph2">Generating…</div></div>
 </div>
-
 <div id="s3" class="scr">
   <div class="dh">
     <button class="btn bg2 sm" onclick="go('s1')">← Back</button>
     <h2>⚙ Preferences</h2>
   </div>
   <div class="sbod">
-
     <div class="sec">
       <div class="sectitle">⭐ Priority Senders</div>
       <div class="srow">
         <label>Preferred email addresses or names</label>
-        <p>Emails from these people will be highlighted in amber and ranked first.</p>
+        <p>Emails from these people are highlighted amber and ranked first.</p>
         <div class="pills" id="spills"></div>
         <div class="row2">
-          <input type="text" class="inp" id="sinp" placeholder="e.g. yashika@school.com or Mom" onkeydown="if(event.key==='Enter')addS()" />
+          <input type="text" class="inp" id="sinp" placeholder="e.g. yashika@school.com or Mom" onkeydown="if(event.key==='Enter')addS()"/>
           <button class="btn ba sm" onclick="addS()">+ Add</button>
         </div>
       </div>
     </div>
-
     <div class="sec">
-      <div class="sectitle">📂 Preferred Topics / Categories</div>
+      <div class="sectitle">📂 Preferred Topics</div>
       <div class="srow">
         <label>Topics Gemini should prioritise</label>
         <p>Summaries will highlight content matching these topics.</p>
         <div class="pills" id="cpills"></div>
         <div class="row2">
-          <input type="text" class="inp" id="cinp" placeholder="e.g. invoices  school  deadlines  project" onkeydown="if(event.key==='Enter')addC()" />
+          <input type="text" class="inp" id="cinp" placeholder="e.g. invoices  school  deadlines" onkeydown="if(event.key==='Enter')addC()"/>
           <button class="btn bg sm" onclick="addC()">+ Add</button>
         </div>
       </div>
     </div>
-
     <div class="sec">
       <div class="sectitle">📝 Summary Style</div>
       <div class="srow">
@@ -199,111 +188,69 @@ input.inp::placeholder{color:var(--muted);}
         </select>
       </div>
     </div>
-
     <button class="btn bg" style="width:100%;padding:12px;" onclick="go('s1')">✓ Save &amp; Go to Inbox</button>
   </div>
 </div>
-
 </div>
 <div id="toast"></div>
-
 <script>
-const CLIENT_ID = '437875602906-4mmoiavhj9m3dslh6tvh1pivdqobnk52.apps.googleusercontent.com';
-const REDIRECT  = 'https://advik-dev100.github.io/mailmind-pwa/';
-const GEM_MODEL = 'gemini-2.0-flash';
-const GEM_KEY   = 'AIzaSyDkEW1d5sK3o89URJb-KN-AbXpThGrSSBQ';
-const VER       = 'v9';
-
-let S = {
-  token : '',
-  emails: [],
-  curId : null,
-  p: { senders:[], cats:[], len:'standard', scope:'today' }
-};
-
-function lp(){ try{ const d=JSON.parse(localStorage.getItem('mm_p_'+VER)||'{}'); S.p={...S.p,...d}; }catch{} }
-function sp(){ localStorage.setItem('mm_p_'+VER,JSON.stringify(S.p)); }
-function saveP(){ S.p.len=document.getElementById('plen').value; S.p.scope=document.getElementById('pscope').value; sp(); }
-
-function addS(){
-  const i=document.getElementById('sinp'); const v=i.value.trim(); if(!v)return;
-  if(!S.p.senders.includes(v)){S.p.senders.push(v);sp();renderS();renderList();}
-  i.value='';
-}
+const CLIENT_ID='437875602906-4mmoiavhj9m3dslh6tvh1pivdqobnk52.apps.googleusercontent.com';
+const REDIRECT='https://advik-dev100.github.io/mailmind-pwa/';
+const GEM_MODEL='gemini-2.0-flash-001';
+const GEM_KEY='AIzaSyDkEW1d5sK3o89URJb-KN-AbXpThGrSSBQ';
+const VER='v10';
+let S={token:'',emails:[],curId:null,p:{senders:[],cats:[],len:'standard',scope:'today'}};
+function lp(){try{const d=JSON.parse(localStorage.getItem('mm_p_'+VER)||'{}');S.p={...S.p,...d};}catch{}}
+function sp(){localStorage.setItem('mm_p_'+VER,JSON.stringify(S.p));}
+function saveP(){S.p.len=document.getElementById('plen').value;S.p.scope=document.getElementById('pscope').value;sp();}
+function addS(){const i=document.getElementById('sinp');const v=i.value.trim();if(!v)return;if(!S.p.senders.includes(v)){S.p.senders.push(v);sp();renderS();renderList();}i.value='';}
 function remS(v){S.p.senders=S.p.senders.filter(x=>x!==v);sp();renderS();renderList();}
-function renderS(){
-  const el=document.getElementById('spills'); if(!el)return;
-  el.innerHTML=S.p.senders.map(s=>`<span class="pill a">${esc(s)} <span class="x" onclick="remS('${esc(s)}')">✕</span></span>`).join('');
-}
-
-function addC(){
-  const i=document.getElementById('cinp'); const v=i.value.trim(); if(!v)return;
-  if(!S.p.cats.includes(v)){S.p.cats.push(v);sp();renderC();}
-  i.value='';
-}
+function renderS(){const el=document.getElementById('spills');if(!el)return;el.innerHTML=S.p.senders.map(s=>`<span class="pill a">${esc(s)} <span class="x" onclick="remS('${esc(s)}')">✕</span></span>`).join('');}
+function addC(){const i=document.getElementById('cinp');const v=i.value.trim();if(!v)return;if(!S.p.cats.includes(v)){S.p.cats.push(v);sp();renderC();}i.value='';}
 function remC(v){S.p.cats=S.p.cats.filter(x=>x!==v);sp();renderC();}
-function renderC(){
-  const el=document.getElementById('cpills'); if(!el)return;
-  el.innerHTML=S.p.cats.map(c=>`<span class="pill g">${esc(c)} <span class="x" onclick="remC('${esc(c)}')">✕</span></span>`).join('');
-}
-
-function loadSettingsUI(){
-  const pl=document.getElementById('plen'); if(pl) pl.value=S.p.len;
-  const ps=document.getElementById('pscope'); if(ps) ps.value=S.p.scope;
-  renderS(); renderC();
-}
-
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));
-  caches.keys().then(k=>k.forEach(x=>caches.delete(x)));
-}
-
+function renderC(){const el=document.getElementById('cpills');if(!el)return;el.innerHTML=S.p.cats.map(c=>`<span class="pill g">${esc(c)} <span class="x" onclick="remC('${esc(c)}')">✕</span></span>`).join('');}
+function loadSettingsUI(){const pl=document.getElementById('plen');if(pl)pl.value=S.p.len;const ps=document.getElementById('pscope');if(ps)ps.value=S.p.scope;renderS();renderC();}
+if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));caches.keys().then(k=>k.forEach(x=>caches.delete(x)));}
 lp();
 window.onload=function(){
   try{
     const f=new URLSearchParams(window.location.hash.substring(1));
     const t=f.get('access_token');
-    if(t){ S.token=t.trim(); localStorage.setItem('mm_t_'+VER,S.token); window.history.replaceState({},'',location.pathname); signedIn(); return; }
+    if(t){S.token=t.trim();localStorage.setItem('mm_t_'+VER,S.token);window.history.replaceState({},'',location.pathname);signedIn();return;}
     const sv=localStorage.getItem('mm_t_'+VER);
-    if(sv&&sv.length>10){ S.token=sv; signedIn(); }
+    if(sv&&sv.length>10){S.token=sv;signedIn();}
   }catch(e){console.error(e);}
 };
-
-function signedIn(){ setBtn(true); hshow(true); go('s1'); fetchMail(); }
-
+function signedIn(){setBtn(true);hshow(true);go('s1');fetchMail();}
 function doAuth(){
-  if(S.token){ S.token=''; localStorage.removeItem('mm_t_'+VER); S.emails=[]; setBtn(false); hshow(false); go('s0'); toast('Disconnected.'); return; }
+  if(S.token){S.token='';localStorage.removeItem('mm_t_'+VER);S.emails=[];setBtn(false);hshow(false);go('s0');toast('Disconnected.');return;}
   const p=new URLSearchParams({client_id:CLIENT_ID,redirect_uri:REDIRECT,response_type:'token',scope:'https://www.googleapis.com/auth/gmail.readonly',prompt:'consent'});
   location.href='https://accounts.google.com/o/oauth2/v2/auth?'+p;
 }
-function setBtn(on){ const b=document.getElementById('ha'); b.textContent=on?'Disconnect':'Connect Gmail'; b.className=on?'btn br sm':'btn bg sm'; }
-function hshow(v){ ['hd','hs'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display=v?'':'none';}); }
-function doDemo(){ S.emails=DEMOS; go('s1'); hshow(true); renderList(); }
-
-function go(id){ document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on')); document.getElementById(id).classList.add('on'); }
-function goSettings(){ go('s3'); loadSettingsUI(); }
-function goDigest(){ go('s2'); runDigest(); }
-
+function setBtn(on){const b=document.getElementById('ha');b.textContent=on?'Disconnect':'Connect Gmail';b.className=on?'btn br sm':'btn bg sm';}
+function hshow(v){['hd','hs'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display=v?'':'none';});}
+function doDemo(){S.emails=DEMOS;go('s1');hshow(true);renderList();}
+function go(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');}
+function goSettings(){go('s3');loadSettingsUI();}
+function goDigest(){go('s2');runDigest();}
 async function fetchMail(){
   if(!S.token)return;
   document.getElementById('elist').innerHTML='<div class="ph2"><span class="spin"></span>Fetching inbox…</div>';
   try{
     const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=25&q=category%3Aprimary',{headers:{'Authorization':'Bearer '+S.token}});
-    if(!r.ok){ if(r.status===401){logout();toast('Session expired, sign in again.');}else{document.getElementById('elist').innerHTML='<div class="ph2">API error '+r.status+'</div>';} return; }
+    if(!r.ok){if(r.status===401){logout();toast('Session expired.');}else{document.getElementById('elist').innerHTML='<div class="ph2">API error '+r.status+'</div>';}return;}
     const d=await r.json();
     if(!d.messages?.length){document.getElementById('elist').innerHTML='<div class="ph2">Inbox empty.</div>';return;}
     const msgs=await Promise.all(d.messages.map(m=>fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+m.id+'?format=full',{headers:{'Authorization':'Bearer '+S.token}}).then(x=>x.json())));
-    S.emails=msgs.map(parse);
-    renderList();
+    S.emails=msgs.map(parse);renderList();
   }catch(e){console.error(e);document.getElementById('elist').innerHTML='<div class="ph2">Network error.</div>';}
 }
-
 function parse(msg){
   const H=msg.payload?.headers||[];
   const g=n=>H.find(h=>h.name.toLowerCase()===n.toLowerCase())?.value||'';
   const from=g('from').replace(/<.*>/,'').replace(/"/g,'').trim()||'Unknown';
   const subj=g('subject')||'(No Subject)';
-  const dr=g('date'); const date=dr?new Date(dr).toLocaleDateString([],{month:'short',day:'numeric'}):'';
+  const dr=g('date');const date=dr?new Date(dr).toLocaleDateString([],{month:'short',day:'numeric'}):'';
   const today=dr?isToday(new Date(dr)):false;
   let body=msg.snippet||'';
   const fp=parts=>{if(!parts)return null;for(const p of parts){if(p.mimeType==='text/plain'&&p.body?.data)return p.body.data;if(p.parts){const f=fp(p.parts);if(f)return f;}}return null;};
@@ -311,114 +258,88 @@ function parse(msg){
   if(raw){try{body=decodeURIComponent(escape(atob(raw.replace(/-/g,'+').replace(/_/g,'/'))));}catch{}}
   return{id:msg.id,from,subj,date,body,unread:msg.labelIds?.includes('UNREAD')??false,today};
 }
-
 function isToday(d){const n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();}
 function isPref(from){return S.p.senders.some(s=>from.toLowerCase().includes(s.toLowerCase()));}
 function logout(){S.token='';localStorage.removeItem('mm_t_'+VER);setBtn(false);hshow(false);go('s0');}
-
 function renderList(){
   const el=document.getElementById('elist');
   if(!S.emails.length){el.innerHTML='<div class="ph2">No emails.</div>';return;}
-  const sorted=[...S.emails].sort((a,b)=>{const ap=isPref(a.from)?0:1,bp=isPref(b.from)?0:1;if(ap!==bp)return ap-bp;return (b.unread?1:0)-(a.unread?1:0);});
+  const sorted=[...S.emails].sort((a,b)=>{const ap=isPref(a.from)?0:1,bp=isPref(b.from)?0:1;if(ap!==bp)return ap-bp;return(b.unread?1:0)-(a.unread?1:0);});
   el.innerHTML='';
   sorted.forEach(e=>{
     const pref=isPref(e.from);
     const d=document.createElement('div');
     d.className='ei'+(e.unread?' unread':'')+(pref?' pref':'');
     d.onclick=()=>selEmail(e.id);
-    d.innerHTML=`<div class="emeta"><span class="efrom">${esc(e.from)}</span><span class="edate">${esc(e.date)}</span></div>
-<div class="esubj">${esc(e.subj)}</div>
-<div class="etags">${pref?'<span class="tag tp">⭐ Priority</span>':''}${e.today?'<span class="tag tt">Today</span>':''}</div>`;
+    d.innerHTML=`<div class="emeta"><span class="efrom">${esc(e.from)}</span><span class="edate">${esc(e.date)}</span></div><div class="esubj">${esc(e.subj)}</div><div class="etags">${pref?'<span class="tag tp">⭐ Priority</span>':''}${e.today?'<span class="tag tt">Today</span>':''}</div>`;
     el.appendChild(d);
   });
 }
-
 function selEmail(id){
-  const e=S.emails.find(x=>x.id===id); if(!e)return;
-  e.unread=false; S.curId=id; renderList();
+  const e=S.emails.find(x=>x.id===id);if(!e)return;
+  e.unread=false;S.curId=id;renderList();
   document.getElementById('dtitle').textContent=e.subj;
   document.getElementById('bsum').style.display='';
-  document.getElementById('dbody').innerHTML=`
-<div style="margin-bottom:15px;font-size:.82rem;color:var(--muted)"><b style="color:var(--txt)">From:</b> ${esc(e.from)}<br><b style="color:var(--txt)">Date:</b> ${esc(e.date)}</div>
-<div style="white-space:pre-wrap;word-break:break-word;line-height:1.75">${esc(e.body)}</div>`;
+  document.getElementById('dbody').innerHTML=`<div style="margin-bottom:15px;font-size:.82rem;color:var(--muted)"><b style="color:var(--txt)">From:</b> ${esc(e.from)}<br><b style="color:var(--txt)">Date:</b> ${esc(e.date)}</div><div style="white-space:pre-wrap;word-break:break-word;line-height:1.75">${esc(e.body)}</div>`;
 }
-
-async function gem(prompt, attempt=0){
+async function gem(prompt,attempt=0){
   const url=`https://generativelanguage.googleapis.com/v1beta/models/${GEM_MODEL}:generateContent?key=${GEM_KEY}`;
   let r;
-  try{
-    r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:300,temperature:0.4}})});
-  }catch(netErr){throw new Error('Network error: '+netErr.message);}
+  try{r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:300,temperature:0.4}})});}
+  catch(e){throw new Error('Network error: '+e.message);}
   if(!r.ok){
-    const errText=await r.text();
-    console.error('Gemini HTTP',r.status,errText);
-    if(r.status===429&&attempt<2){await new Promise(res=>setTimeout(res,2000+attempt*1000));return gem(prompt,attempt+1);}
+    const t=await r.text();
+    console.error('Gemini',r.status,t);
+    if(r.status===429&&attempt<2){await new Promise(res=>setTimeout(res,2500+attempt*1000));return gem(prompt,attempt+1);}
     let msg='Gemini error '+r.status;
-    try{const j=JSON.parse(errText);msg=j.error?.message||msg;}catch{}
+    try{const j=JSON.parse(t);msg=j.error?.message||msg;}catch{}
     throw new Error(msg);
   }
   const d=await r.json();
   const text=d.candidates?.[0]?.content?.parts?.[0]?.text;
   if(!text){
-    if(d.candidates?.[0]?.finishReason==='SAFETY') return '(Filtered by Gemini safety policy)';
-    if(d.promptFeedback?.blockReason) return '(Blocked: '+d.promptFeedback.blockReason+')';
+    if(d.candidates?.[0]?.finishReason==='SAFETY')return '(Filtered by safety policy)';
+    if(d.promptFeedback?.blockReason)return '(Blocked: '+d.promptFeedback.blockReason+')';
     return '(No summary generated)';
   }
   return text.trim();
 }
-
-function prefCtx(){
-  const lines=[];
-  if(S.p.senders.length) lines.push('Priority senders: '+S.p.senders.join(', '));
-  if(S.p.cats.length)    lines.push('Preferred topics: '+S.p.cats.join(', '));
-  return lines.length?'User preferences:\n'+lines.join('\n')+'\n':'';
-}
-
+function prefCtx(){const l=[];if(S.p.senders.length)l.push('Priority senders: '+S.p.senders.join(', '));if(S.p.cats.length)l.push('Preferred topics: '+S.p.cats.join(', '));return l.length?'User preferences:\n'+l.join('\n')+'\n':'';}
 const LENS={brief:'1-2 sentences',standard:'2-3 sentences',detailed:'a detailed paragraph with action points'};
-
 async function sumOne(){
-  const e=S.emails.find(x=>x.id===S.curId); if(!e)return;
-  const btn=document.getElementById('bsum'); btn.disabled=true; btn.textContent='⏳…';
+  const e=S.emails.find(x=>x.id===S.curId);if(!e)return;
+  const btn=document.getElementById('bsum');btn.disabled=true;btn.textContent='⏳…';
   const old=document.getElementById('dbody').innerHTML;
   document.getElementById('dbody').innerHTML=`<div class="aicard"><div class="ailbl">✦ AI Summary</div><div class="aitxt" id="ait" style="color:var(--muted)"><span class="spin"></span> Generating…</div></div>`+old;
   try{
-    const txt=await gem(`You are MailMind, an AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action is needed, start with ACTION REQUIRED. Be direct.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2500)}\n\nSummary:`);
-    document.getElementById('ait').textContent=txt; e.sum=txt;
-  }catch(err){
-    const el=document.getElementById('ait');
-    if(el) el.innerHTML='<span style="color:var(--red)">⚠ '+esc(err.message||String(err))+'</span>';
-  }
-  btn.disabled=false; btn.textContent='✦ AI Summary';
+    const txt=await gem(`You are MailMind.\n${prefCtx()}\nSummarise in ${LENS[S.p.len]}. If action needed start with ACTION REQUIRED.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,2500)}\n\nSummary:`);
+    document.getElementById('ait').textContent=txt;e.sum=txt;
+  }catch(err){const el=document.getElementById('ait');if(el)el.innerHTML='<span style="color:var(--red)">⚠ '+esc(err.message)+'</span>';}
+  btn.disabled=false;btn.textContent='✦ AI Summary';
 }
-
 async function runDigest(){
   document.getElementById('ddate').textContent=S.p.scope==='today'?'Today, '+new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'}):'All loaded emails';
   const pool=S.p.scope==='today'?S.emails.filter(e=>e.today||!S.token):S.emails;
   const dbod=document.getElementById('dbod');
-  if(!pool.length){dbod.innerHTML='<div class="ph2">No emails to summarise. Change scope to "All" in ⚙ Settings.</div>';return;}
+  if(!pool.length){dbod.innerHTML='<div class="ph2">No emails. Change scope to "All" in ⚙ Settings.</div>';return;}
   dbod.innerHTML=pool.map(e=>`<div class="dc${isPref(e.from)?' dp':''}"><div class="dch"><div><div class="dcfrom">${esc(e.from)}</div><div class="dcsubj">${esc(e.subj)}</div></div><div class="dcdate">${esc(e.date)}</div></div><div class="dcs" id="dc_${e.id}"><span class="spin"></span> Summarising…</div></div>`).join('');
   for(const e of pool){
     const el=document.getElementById('dc_'+e.id);
     try{
-      const txt=await gem(`You are MailMind, an AI email assistant.\n${prefCtx()}\nSummarise this email in ${LENS[S.p.len]}. If action needed, prefix with ACTION REQUIRED. Be concise.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,1500)}\n\nSummary:`);
-      if(el) el.innerHTML=esc(txt).replace('ACTION REQUIRED','<b style="color:var(--amber)">⚡ ACTION REQUIRED</b>');
+      const txt=await gem(`You are MailMind.\n${prefCtx()}\nSummarise in ${LENS[S.p.len]}. If action needed prefix with ACTION REQUIRED.\n\nFrom: ${e.from}\nSubject: ${e.subj}\nBody:\n${e.body.slice(0,1500)}\n\nSummary:`);
+      if(el)el.innerHTML=esc(txt).replace('ACTION REQUIRED','<b style="color:var(--amber)">⚡ ACTION REQUIRED</b>');
       e.sum=txt;
-    }catch(err){
-      if(el) el.innerHTML='<span style="color:var(--red)">⚠ '+esc(err.message||String(err))+'</span>';
-    }
+    }catch(err){if(el)el.innerHTML='<span style="color:var(--red)">⚠ '+esc(err.message||String(err))+'</span>';}
     await new Promise(res=>setTimeout(res,500));
   }
   toast('✓ Digest ready');
 }
-
 const DEMOS=[
-  {id:'d1',from:'Yashika (Coordinator)',subj:'SST Slide Submissions',date:td(),body:'Hey team, submit updated slides on the 1857 Revolt centers tonight so I can merge them. Match the framework layout from yesterday.',unread:true,today:true},
-  {id:'d2',from:'Advik',subj:'PWA Config Update',date:td(),body:'Updated the app build files. Let me know if standalone backgrounds render fine on your test profiles.',unread:false,today:true},
-  {id:'d3',from:'School Admin',subj:'Exam Schedule Released',date:td(),body:'Dear students, the final examination schedule has been uploaded. Please check your admit card status by Friday.',unread:true,today:true},
-  {id:'d4',from:'GitHub',subj:'Deployment succeeded',date:td(),body:'Your latest push to main was deployed successfully to GitHub Pages.',unread:false,today:true},
+  {id:'d1',from:'Yashika (Coordinator)',subj:'SST Slide Submissions',date:new Date().toLocaleDateString([],{month:'short',day:'numeric'}),body:'Hey team, submit updated slides on the 1857 Revolt centers tonight so I can merge them.',unread:true,today:true},
+  {id:'d2',from:'Advik',subj:'PWA Config Update',date:new Date().toLocaleDateString([],{month:'short',day:'numeric'}),body:'Updated the app build files. Let me know if standalone backgrounds render fine.',unread:false,today:true},
+  {id:'d3',from:'School Admin',subj:'Exam Schedule Released',date:new Date().toLocaleDateString([],{month:'short',day:'numeric'}),body:'Dear students, the final examination schedule has been uploaded. Check your admit card by Friday.',unread:true,today:true},
+  {id:'d4',from:'GitHub',subj:'Deployment succeeded',date:new Date().toLocaleDateString([],{month:'short',day:'numeric'}),body:'Your latest push to main was deployed successfully to GitHub Pages.',unread:false,today:true},
 ];
-function td(){return new Date().toLocaleDateString([],{month:'short',day:'numeric'});}
-
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function toast(m,ms=3200){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),ms);}
 </script>
