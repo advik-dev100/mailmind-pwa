@@ -235,9 +235,9 @@ input[type=password].inp{letter-spacing:.1em;}
 // ── CONFIG ──────────────────────────────────────────────
 const CLIENT_ID   = '437875602906-4mmoiavhj9m3dslh6tvh1pivdqobnk52.apps.googleusercontent.com';
 const REDIRECT    = 'https://advik-dev100.github.io/mailmind-pwa/';
-const GEM_MODEL='gemini-2.0-flash-lite';
-const GEM_KEY='AQ.Ab8RN6I5DhVa_NKM9eunr-Ys2It23V-4rG_5SN7FrOQankHPAA';
-const VER='v12';
+const GEM_MODEL='gemini-1.5-flash';
+const GEM_KEY='AQ.Ab8RN6L9Gf5X0Sx0WBJAahgKRYC4aJI8AcHSEbLThA_MlXMTbA';
+const VER='v13';
 
 // ── STATE ────────────────────────────────────────────────
 let S = {
@@ -482,7 +482,7 @@ async function runDigest(){
 
 // ── DEMO DATA ────────────────────────────────────────────
 const DEMOS=[
-  {id:'d1',from:'Swastik (Coordinator)',subj:'SST Slide Submissions',date:td(),body:'Hey team, submit updated slides on the 1857 Revolt centers tonight so I can merge them. Match the framework layout from yesterday.',unread:true,today:true},
+  {id:'d1',from:'Yashika (Coordinator)',subj:'SST Slide Submissions',date:td(),body:'Hey team, submit updated slides on the 1857 Revolt centers tonight so I can merge them. Match the framework layout from yesterday.',unread:true,today:true},
   {id:'d2',from:'Advik',subj:'PWA Config Update',date:td(),body:'Updated the app build files. Let me know if standalone backgrounds render fine on your test profiles.',unread:false,today:true},
   {id:'d3',from:'School Admin',subj:'Exam Schedule Released',date:td(),body:'Dear students, the final examination schedule has been uploaded. Please check your admit card status by Friday.',unread:true,today:true},
   {id:'d4',from:'GitHub',subj:'Deployment succeeded',date:td(),body:'Your latest push to main was deployed successfully to GitHub Pages. No errors detected.',unread:false,today:true},
