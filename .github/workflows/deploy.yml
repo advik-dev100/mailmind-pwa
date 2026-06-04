@@ -10,7 +10,34 @@ jobs:
     permissions:
       contents: write
 
+    stepsname: Inject Key and Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Inject Gemini API key
+        run: sed -i "s|GEMINI_KEY_PLACEHOLDER|${{ secrets.GEMINI_KEY }}|g" index.html
+
+      - name: Push injected file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --staged --quiet || git commit -m "ci: inject key [skip ci]"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
       - uses: actions/checkout@v4
 
       - name: Inject Gemini API key
