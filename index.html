@@ -236,8 +236,8 @@ input[type=password].inp{letter-spacing:.1em;}
 const CLIENT_ID   = '437875602906-4mmoiavhj9m3dslh6tvh1pivdqobnk52.apps.googleusercontent.com';
 const REDIRECT    = 'https://advik-dev100.github.io/mailmind-pwa/';
 const GEM_MODEL='gemini-1.5-flash';
-const GEM_KEY='AQ.Ab8RN6L9Gf5X0Sx0WBJAahgKRYC4aJI8AcHSEbLThA_MlXMTbA';
-const VER='v13';
+const GEM_KEY='GEMINI_KEY_PLACEHOLDER';
+const VER='v15';
 
 // ── STATE ────────────────────────────────────────────────
 let S = {
@@ -300,7 +300,21 @@ window.onload=function(){
     const t=f.get('access_token');
     if(t){ S.token=t.trim(); localStorage.setItem('mm_t_'+VER,S.token); window.history.replaceState({},'',location.pathname); signedIn(); return; }
     const sv=localStorage.getItem('mm_t_'+VER);
-    if(sv&&sv.length>10){ S.token=sv; signedIn(); }
+    if(sv&&sv.length>10){
+      S.token=sv;
+      // Validate token before proceeding
+      fetch('https://www.googleapis.com/oauth2/v3/tokeninfo?access_token='+sv)
+        .then(r=>r.json())
+        .then(d=>{
+          if(d.error||d.expires_in<60){
+            localStorage.removeItem('mm_t_'+VER);
+            toast('Session expired — please sign in again.');
+          } else {
+            signedIn();
+          }
+        })
+        .catch(()=>signedIn()); // If check fails, try anyway
+    }
   }catch(e){console.error(e);}
 };
 
