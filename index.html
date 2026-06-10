@@ -249,8 +249,7 @@ input[type=password].inp{letter-spacing:.1em;}
 const CLIENT_ID   = '437875602906-4mmoiavhj9m3dslh6tvh1pivdqobnk52.apps.googleusercontent.com';
 const REDIRECT    = 'https://advik-dev100.github.io/mailmind-pwa/';
 const GEM_MODEL='gemini-1.5-flash';
-const GEM_KEY=localStorage.getItem('mm_gemini_key')||'';
-const VER='v16';
+const VER='v18';
 
 // ── STATE ────────────────────────────────────────────────
 let S = {
@@ -430,6 +429,8 @@ function selEmail(id){
 
 // ── GEMINI CALL ──────────────────────────────────────────
 async function gem(prompt, attempt=0){
+  const GEM_KEY=localStorage.getItem('mm_gemini_key')||'';
+  if(!GEM_KEY){toast('⚠ Add your Gemini key in ⚙ Settings');throw new Error('No key');}
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEM_MODEL}:generateContent`;
   let r;
   try {
@@ -523,7 +524,7 @@ async function runDigest(){
 
 // ── DEMO DATA ────────────────────────────────────────────
 const DEMOS=[
-  {id:'d1',from:'Yashika (Coordinator)',subj:'SST Slide Submissions',date:td(),body:'Hey team, submit updated slides on the 1857 Revolt centers tonight so I can merge them. Match the framework layout from yesterday.',unread:true,today:true},
+  {id:'d1',from:'Brijmohan (Coordinator)',subj:'SST Slide Submissions',date:td(),body:'Hey team, submit updated slides on the 1857 Revolt centers tonight so I can merge them. Match the framework layout from yesterday.',unread:true,today:true},
   {id:'d2',from:'Advik',subj:'PWA Config Update',date:td(),body:'Updated the app build files. Let me know if standalone backgrounds render fine on your test profiles.',unread:false,today:true},
   {id:'d3',from:'School Admin',subj:'Exam Schedule Released',date:td(),body:'Dear students, the final examination schedule has been uploaded. Please check your admit card status by Friday.',unread:true,today:true},
   {id:'d4',from:'GitHub',subj:'Deployment succeeded',date:td(),body:'Your latest push to main was deployed successfully to GitHub Pages. No errors detected.',unread:false,today:true},
