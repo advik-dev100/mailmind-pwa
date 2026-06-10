@@ -3,9 +3,14 @@ name: Inject Key and Deploy
 on:
   push:
     branches: [main]
+    paths:
+      - 'index.html'
+      - 'sw.js'
+      - 'manifest.json'
 
 jobs:
   deploy:
+    if: "!contains(github.event.head_commit.message, 'ci: inject')"
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -14,21 +19,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
 
       - name: Inject Gemini API key
         run: sed -i "s|GEMINI_KEY_PLACEHOLDER|${{ secrets.GEMINI_KEY }}|g" index.html
 
       - name: Push injected file
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "No changes — key already injected"
           else
-            git commit -m "ci: inject key [skip ci]"
+            git commit -m "ci: inject key"
             git push origin main
           fi
