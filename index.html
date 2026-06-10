@@ -178,6 +178,19 @@ input[type=password].inp{letter-spacing:.1em;}
 
     <!-- Priority senders -->
     <div class="sec">
+      <div class="sectitle">🤖 Gemini API Key (Free)</div>
+      <div class="srow">
+        <label>Your Gemini API Key</label>
+        <p>Free at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--green);">aistudio.google.com</a> — stored only in your browser, never shared.</p>
+        <div class="row2">
+          <input type="password" class="inp" id="gkey" placeholder="Paste your key here e.g. AQ.Ab8… or AIzaSy…" />
+          <button class="btn bg sm" onclick="saveKey()">Save</button>
+        </div>
+        <div id="kstat" class="ks"></div>
+      </div>
+    </div>
+
+    <div class="sec">
       <div class="sectitle">⭐ Priority Senders</div>
       <div class="srow">
         <label>Preferred email addresses or names</label>
@@ -236,8 +249,8 @@ input[type=password].inp{letter-spacing:.1em;}
 const CLIENT_ID   = '437875602906-4mmoiavhj9m3dslh6tvh1pivdqobnk52.apps.googleusercontent.com';
 const REDIRECT    = 'https://advik-dev100.github.io/mailmind-pwa/';
 const GEM_MODEL='gemini-1.5-flash';
-const GEM_KEY='GEMINI_KEY_PLACEHOLDER';
-const VER='v15';
+const GEM_KEY=localStorage.getItem('mm_gemini_key')||'';
+const VER='v16';
 
 // ── STATE ────────────────────────────────────────────────
 let S = {
@@ -280,7 +293,21 @@ function renderC(){
   el.innerHTML=S.p.cats.map(c=>`<span class="pill g">${esc(c)}<span class="x" onclick="remC('${esc(c)}')">✕</span></span>`).join('');
 }
 
+function saveKey(){
+  const v=document.getElementById('gkey').value.trim();
+  if(!v){toast('Paste your key first');return;}
+  localStorage.setItem('mm_gemini_key',v);
+  document.getElementById('kstat').innerHTML='<span style="color:var(--green)">✓ Key saved</span>';
+  toast('✓ Gemini key saved');
+}
+
 function loadSettingsUI(){
+  const ki=document.getElementById('gkey');
+  if(ki){
+    ki.value=localStorage.getItem('mm_gemini_key')||'';
+    const ks=document.getElementById('kstat');
+    if(ks&&ki.value) ks.innerHTML='<span style="color:var(--green)">✓ Key saved</span>';
+  }
   const pl=document.getElementById('plen'); if(pl) pl.value=S.p.len;
   const ps=document.getElementById('pscope'); if(ps) ps.value=S.p.scope;
   renderS(); renderC();
