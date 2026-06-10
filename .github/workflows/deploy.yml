@@ -10,44 +10,25 @@ jobs:
     permissions:
       contents: write
 
-    stepsname: Inject Key and Deploy
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
+          fetch-depth: 0
 
       - name: Inject Gemini API key
         run: sed -i "s|GEMINI_KEY_PLACEHOLDER|${{ secrets.GEMINI_KEY }}|g" index.html
 
       - name: Push injected file
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git diff --staged --quiet || git commit -m "ci: inject key [skip ci]"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
-      - uses: actions/checkout@v4
-
-      - name: Inject Gemini API key
-        run: |
-          sed -i "s|GEMINI_KEY_PLACEHOLDER|${{ secrets.GEMINI_KEY }}|g" index.html
-
-      - name: Commit injected file to main
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add index.html
-          git diff --staged --quiet || git commit -m "ci: inject gemini key [skip ci]"
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "ci: inject key [skip ci]"
+            git push origin main
+          fi
